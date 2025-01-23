@@ -8922,6 +8922,7 @@ nanomatch@^1.2.9:
     react-native-vector-icons "^10.2.0"
     react-native-web "~0.19.13"
     react-native-webview "^13.12.5"
+    socket.io-client "^4.8.1"
     typescript "^5.3.3"
 
 natural-compare@^1.4.0:

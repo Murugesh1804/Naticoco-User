@@ -39,7 +39,7 @@ export default function TrackScreen({route}) {
   // Fetch order details
   const fetchOrderDetails = async () => {
     try {
-      const response = await axios.get(`http://192.168.29.242:3500/api/orders/${orderId}`);
+      const response = await axios.get(`http://192.168.83.227:3500/api/orders/${orderId}`);
       setOrder(response.data.order);
       setLoading(false);
     } catch (error) {
@@ -58,15 +58,15 @@ export default function TrackScreen({route}) {
         longitude: location.longitude,
       });
     });
-
+  
     // Listen for order status updates
     socket.on(`order_status_${orderId}`, (status) => {
-      setOrder(prevOrder => ({
+      setOrder((prevOrder) => ({
         ...prevOrder,
-        status: status
+        status: status,
       }));
     });
-  };
+  };;
 
   useEffect(() => {
     fetchOrderDetails();
@@ -87,7 +87,6 @@ export default function TrackScreen({route}) {
     getLocation();
 
     return () => {
-      // Clean up socket listeners
       socket.off(`driver_location_${orderId}`);
       socket.off(`order_status_${orderId}`);
     };
@@ -103,7 +102,7 @@ export default function TrackScreen({route}) {
           text: 'Yes',
           onPress: async () => {
             try {
-              await axios.patch(`http://192.168.29.242:3500/api/orders/${orderId}/cancel`);
+              await axios.patch(`http://192.168.83.227:3500/api/orders/${orderId}/cancel`);
               navigation.navigate('Home');
             } catch (error) {
               Alert.alert('Error', 'Could not cancel order');

@@ -11,8 +11,8 @@ const SplashScreenComponent = ({ route }) => {
     // Hide the splash screen after 2 seconds
     setTimeout(() => {
       // SplashScreen.hide();  // Hide splash screen
-      navigation.replace("Track", {orderId : orderId});  // Navigate to Home screen after splash
-    }, 1000); // Adjust the delay to your preference
+      navigation.replace("Track", {orderId : orderId});  
+    }, 1000);
   }, []);
   
 
