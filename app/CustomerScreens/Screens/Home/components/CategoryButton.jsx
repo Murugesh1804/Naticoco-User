@@ -26,7 +26,7 @@ const CategoryButton = ({ name, image, isSelected, onSelect, navigation,items })
           source={image}
           style={[styles.categoryImage, { height: 50, width: 50 }]}
         />
-        <Text style={styles.categoryName}>{name == 'heatandeat' ? "Heat & Eat" :name}</Text>
+        <Text style={styles.categoryName}>{name}</Text>
       </LinearGradient>
     </TouchableOpacity>
   );

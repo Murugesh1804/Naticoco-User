@@ -9,56 +9,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SCREEN_WIDTH } from '../../CustomerScreens/Screens/Home/constants';
 
-const StockItem = ({ item, onDeleteProduct }) => {
- const [isEditing, setIsEditing] = useState(false);
- const [isSaving, setIsSaving] = useState(false);
- const [stockValue, setStockValue] = useState(item.stock?.toString() || "0");
- const [priceValue, setPriceValue] = useState(item.price?.toString() || "0");
- const [bestSeller, setBestSeller] = useState(item.bestSeller || false);
- const [newArrival, setNewArrival] = useState(item.newArrival || false);
- const [availability, setAvailability] = useState(item.availability || false);
 
- const handleSave = async () => {
-   try {
-     setIsSaving(true);
-     await axios.put(`http://192.168.29.165:3500/citystore/Updatemenu/${item._id}`, {
-       // stock: parseInt(stockValue), // Convert to integer
-       price: parseFloat(priceValue), // Convert to float
-       BestSeller: bestSeller,
-       newArrival: newArrival,
-       availability: availability,
-     });
-     setIsEditing(false); // Exit editing mode
-   } catch (error) {
-     console.error("Error updating item:", error);
-     Alert.alert("Error", "Failed to save changes");
-   } finally {
-     setIsSaving(false);
-     alert('Data Updated');
-   }
- };
-
- const handleDelete = async () => {
-   Alert.alert(
-     "Delete Product",
-     `Are you sure you want to delete "${item.itemName}"?`,
-     [
-       { text: "Cancel", style: "cancel" },
-       {
-         text: "Delete",
-         style: "destructive",
-         onPress: async () => {
-           try {
-             await axios.delete(`http://192.168.29.165:3500/citystore/Deletemenu/${item._id}`);
-           } catch (error) {
-             console.error("Error deleting item:", error);
-             Alert.alert("Error", "Failed to delete product");
-           }
-         },
-       },
-     ]
-   );
- };
 const StockItem = ({ item, onDeleteProduct }) => {
  const [isEditing, setIsEditing] = useState(false);
  const [isSaving, setIsSaving] = useState(false);
@@ -202,7 +153,6 @@ const StockItem = ({ item, onDeleteProduct }) => {
      </Card>
    </MotiView>
  );
-};
 };
 
 
@@ -578,6 +528,10 @@ const styles = StyleSheet.create({
    flexDirection: 'row',
    justifyContent: 'space-between',
    alignItems: 'center',
+ },
+ iconButtons : {
+  width : SCREEN_WIDTH / 2,
+  flexDirection : 'row'
  },
  itemName: {
    fontSize: 12,

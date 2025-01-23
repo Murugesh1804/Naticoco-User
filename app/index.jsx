@@ -47,7 +47,8 @@ export default function App() {
 
   return (
     <NavigationIndependentTree style={styles.container}>
-      <GestureHandlerRootView >
+      <StatusBar backgroundColor={'transparent'} translucent={true}   />
+      <GestureHandlerRootView  >
         <PaperProvider>
           <AuthProvider>
             <CartProvider>

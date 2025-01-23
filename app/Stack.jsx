@@ -23,6 +23,7 @@ import ScreenBackground from "./CustomerScreens/Components/ScreenBackground";
 import DeliveryTab from "./DeliveryScreens/DeliveryTab";
 import StoreStack from "./StoreScreens/StoreStack";
 import Postorder from "./CustomerScreens/Screens/Postorder";
+import CustomerSupportScreen from "./CustomerScreens/Screens/CustomerSupport";
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
 //Admin Screens
@@ -194,6 +195,11 @@ export default function StackNavigator() {
         <Stack.Screen
           name="postOrder"
           component={Postorder}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Support"
+          component={CustomerSupportScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

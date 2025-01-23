@@ -236,7 +236,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.logoutButton}
-                  onPress={() => console.log("Support")}
+                  onPress={() => navigation.navigate('Support')}
                 >
                   <LinearGradient
                     colors={["#F8931F", "#f4a543"]}
