@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useCart } from '../context/CartContext';
+import ScreenBackground from '../Components/ScreenBackground';
+import { SCREEN_HEIGHT } from './Home/constants';
 
-const OrderCard = ({ order }) => {
+const OrderCard =  ({ order }) => {
   const navigation = useNavigation();
+  const {addToCart} = useCart();
+  const [menu,setMenu] = useState([]);
+  
+  const fetchMenu = async () => {
+   const menu = await AsyncStorage.getItem('storeMenu');
+   setMenu(menu);
+  }
+
+  fetchMenu();
   
   return (
     <TouchableOpacity 
       style={styles.orderCard}
-      onPress={() => console.log(order.status)}
+      onPress={() => console.log(order)}
     >
       <View style={styles.orderHeader}>
         <View>
@@ -21,7 +33,7 @@ const OrderCard = ({ order }) => {
         </View>
         <View style={[
           styles.statusBadge,
-          { backgroundColor: order.status === 'Delivered' ? '#89C73A' : '#F8931F' }
+          { backgroundColor: order.status === 'COMPLETED' ? '#89C73A' : '#F8931F' }
         ]}>
           <Text style={styles.statusText}>{order.status}</Text>
         </View>
@@ -47,7 +59,7 @@ const OrderCard = ({ order }) => {
       </View>
 
       <View style={styles.actionRow}>
-      {(order.status ==  'PENDING' || 'PREPARING') && (
+      {(order.status ==  'PENDING' || order.status == 'PREPARING') && (
         <TouchableOpacity 
           style={styles.actionButton}
           onPress={() => navigation.navigate('Track', { orderId: order._id })}
@@ -57,7 +69,16 @@ const OrderCard = ({ order }) => {
         </TouchableOpacity>
       )}
         {(order.status === 'COMPLETED') && (
-          <TouchableOpacity style={styles.actionButton}>
+          <TouchableOpacity onPress={() => {
+            order.items.map((item) => {
+             if (menu.includes(item)) { 
+              addToCart(item);
+              navigation.navigate('Cart');
+             } else {
+              Alert.alert('Item not available at the store currently')
+             };
+            })
+          }} style={styles.actionButton}>
             <Ionicons name="repeat-outline" size={20} color="#F8931F" />
             <Text style={styles.actionButtonText}>Reorder</Text>
           </TouchableOpacity>
@@ -78,7 +99,7 @@ export default function MyOrders() {
         const parsedCredentials = credentials ? JSON.parse(credentials) : null;
         const userId = parsedCredentials?.token?.userId;
         // console.log(userId);
-        const response = await axios.get(`http://192.168.29.242:3500/api/orders/myorders/${userId}`);
+        const response = await axios.get(`http://192.168.29.165:3500/api/orders/myorders/${userId}`);
         setOrders(response.data.orders);
         // console.log(orders[1].items);
       } catch (error) {
@@ -98,7 +119,7 @@ export default function MyOrders() {
         <Text style={styles.headerTitle}>My Orders</Text>
         <View style={{ width: 24 }} />
       </View>
-
+      <ScreenBackground style={{marginBottom : SCREEN_HEIGHT /4.5}} >
       <FlatList
         data={orders}
         renderItem={({ item }) => <OrderCard key={item._id} order={item} />}
@@ -107,6 +128,7 @@ export default function MyOrders() {
         contentContainerStyle={styles.ordersList}
         showsVerticalScrollIndicator={false}
       />
+      </ScreenBackground>
     </SafeAreaView>
   );
 }

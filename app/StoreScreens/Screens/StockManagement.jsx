@@ -21,7 +21,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
  const handleSave = async () => {
    try {
      setIsSaving(true);
-     await axios.put(`http://192.168.29.242:3500/citystore/Updatemenu/${item._id}`, {
+     await axios.put(`http://192.168.29.165:3500/citystore/Updatemenu/${item._id}`, {
        // stock: parseInt(stockValue), // Convert to integer
        price: parseFloat(priceValue), // Convert to float
        BestSeller: bestSeller,
@@ -49,7 +49,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
          style: "destructive",
          onPress: async () => {
            try {
-             await axios.delete(`http://192.168.29.242:3500/citystore/Deletemenu/${item._id}`);
+             await axios.delete(`http://192.168.29.165:3500/citystore/Deletemenu/${item._id}`);
            } catch (error) {
              console.error("Error deleting item:", error);
              Alert.alert("Error", "Failed to delete product");
@@ -71,7 +71,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
  const handleSave = async () => {
    try {
      setIsSaving(true);
-     await axios.put(`http://192.168.29.242:3500/citystore/Updatemenu/${item._id}`, {
+     await axios.put(`http://192.168.29.165:3500/citystore/Updatemenu/${item._id}`, {
        // stock: parseInt(stockValue), // Convert to integer
        price: parseFloat(priceValue), // Convert to float
        BestSeller: bestSeller,
@@ -99,7 +99,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
          style: "destructive",
          onPress: async () => {
            try {
-             await axios.delete(`http://192.168.29.242:3500/citystore/Deletemenu/${item._id}`);
+             await axios.delete(`http://192.168.29.165:3500/citystore/Deletemenu/${item._id}`);
            } catch (error) {
              console.error("Error deleting item:", error);
              Alert.alert("Error", "Failed to delete product");
@@ -230,7 +230,7 @@ export default function StockManagement({ navigation }) {
           return;
         }
 
-        const response = await axios.get(`http://192.168.29.242:3500/citystore/getallmenu?storeId=${storeId}`);
+        const response = await axios.get(`http://192.168.29.165:3500/citystore/getallmenu?storeId=${storeId}`);
         setStockItems(response.data);
       } catch (error) {
         console.error('Error fetching menu items:', error);
@@ -334,7 +334,7 @@ export default function StockManagement({ navigation }) {
           type
         });
       }
-      const response = await axios.post('http://192.168.29.242:3500/citystore/Addmenu', formData, {
+      const response = await axios.post('http://192.168.29.165:3500/citystore/Addmenu', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -356,7 +356,7 @@ export default function StockManagement({ navigation }) {
           bestSeller: false,
           newArrival: false
         });
-        const menuResponse = await axios.get(`http://192.168.29.242:3500/citystore/getallmenu?storeId=${storeId}`);
+        const menuResponse = await axios.get(`http://192.168.29.165:3500/citystore/getallmenu?storeId=${storeId}`);
         setStockItems(menuResponse.data);
       }
     } catch (error) {

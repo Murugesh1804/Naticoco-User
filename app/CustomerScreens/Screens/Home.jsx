@@ -37,7 +37,7 @@ export default function HomeScreen() {
   const { user } = useAuth();
   const isLoading = useLoadAssets(productImages);
   const [menuItems, setMenuItems] = useState([]);
-  const [nearestStoreId, setNearestStoreId] = useState(null);
+  // const [nearestStoreId, setNearestStoreId] = useState(null);
   const [bestSellers, setBestSellers] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
@@ -51,7 +51,7 @@ export default function HomeScreen() {
       const parsedLoginData = loginData ? JSON.parse(loginData) : null;
       const authToken = parsedLoginData?.token?.token || token;
 
-      const response = await axios.get("http://192.168.29.242:3500/api/user/nearest", {
+      const response = await axios.get("http://192.168.29.165:3500/api/user/nearest", {
         params: { latitude, longitude },
         headers: {
           'Authorization': `Bearer ${authToken}`,
@@ -59,7 +59,7 @@ export default function HomeScreen() {
         },
       });
 
-      setNearestStoreId(response.data.storeId);
+      await AsyncStorage.setItem('storeId',response.data.nearestStoreId);
 
       if (response.data && response.data.menu) {
         const menu = response.data.menu.filter(item => item.category !== "Fried");

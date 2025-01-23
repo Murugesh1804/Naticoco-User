@@ -1,9 +1,20 @@
-import React, { createContext, useState, useContext } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
   const [cartItems, setCartItems] = useState([]);
+  const [menu,setMenu] = useState([]);
+
+  useEffect(() => {
+   const fetchMenu = async () => {
+    const m = await AsyncStorage.getItem('storeMenu');
+    setMenu(m);
+   }
+
+   fetchMenu();
+  },[menu])
 
   const addToCart = (item) => {
     setCartItems(prevItems => {
@@ -34,7 +45,7 @@ export function CartProvider({ children }) {
 
   const updateQuantity = (itemId, newQuantity) => {
     if (newQuantity < 1) {
-      removeFromCart(itemId);
+      removeFromCart(item._id);
       return;
     }
     setCartItems(prevItems =>
@@ -55,11 +66,12 @@ export function CartProvider({ children }) {
 
   // Function to decrease quantity
   const decreaseQuantity = (itemId) => {
+
     setCartItems(prevItems =>
       prevItems.map(item =>
         item._id === itemId && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
-          : item
+          : removeFromCart(item._id)
       ).filter(item => item.quantity > 0) // Remove items with quantity 0
     );
   };

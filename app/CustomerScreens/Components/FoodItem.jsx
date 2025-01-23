@@ -17,7 +17,7 @@ import * as Haptics from 'expo-haptics';
 
 export default function FoodItem({ item, onPress }) {
   const [image,setImage] = useState(null);
-  const { addToCart, cartItems, cartCount, updateQuantity } = useCart();
+  const { addToCart, cartItems, cartCount, increaseQuantity, decreaseQuantity } = useCart();
   const cartItem = cartItems.find(i => i._id === item._id || i.id === item._id || item.id);
   // console.log(cartItem);
   const handleAddToCart = () => {
@@ -67,7 +67,7 @@ export default function FoodItem({ item, onPress }) {
                     style={styles.quantityContainer}
                   >
                     <TouchableOpacity 
-                      onPress={() => handleQuantityChange(cartItem.quantity - 1)}
+                      onPress={() => decreaseQuantity(item._id)}
                       style={styles.quantityButton}
                     >
                       <Ionicons name="remove" size={16} color="white" />
@@ -76,7 +76,7 @@ export default function FoodItem({ item, onPress }) {
                     <Text style={styles.quantityText}>{cartItem.quantity}</Text>
 
                     <TouchableOpacity 
-                      onPress={() => handleQuantityChange(cartItem.quantity + 1)}
+                      onPress={() => increaseQuantity(item._id)}
                       style={styles.quantityButton}
                     >
                       <Ionicons name="add" size={16} color="white" />

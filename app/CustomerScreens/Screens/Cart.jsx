@@ -104,7 +104,7 @@ function CartScreen({ navigation }) {
   const handleOnlinePayment = async () => {
     try {
       // Create order on your backend
-      const orderResponse = await axios.post('http://192.168.29.242:3500/payment/orders', {
+      const orderResponse = await axios.post('http://192.168.29.165:3500/payment/orders', {
         amount: totalAmount * 100,
       });
 
@@ -152,7 +152,7 @@ function CartScreen({ navigation }) {
       setIsLoading(true);
   
       // Verify payment on backend
-      const verificationResponse = await axios.post('http://192.168.29.242:3500/payment/verify', {
+      const verificationResponse = await axios.post('http://192.168.29.165:3500/payment/verify', {
         razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_signature: response.razorpay_signature
@@ -183,6 +183,7 @@ function CartScreen({ navigation }) {
         {
           text: 'Confirm',
           onPress: () => {
+            setShowPaymentModal(false);
             navigation.navigate('Success', {
               paymentMethod: 'cod',
               orderId: `COD${Date.now()}`
@@ -210,7 +211,7 @@ function CartScreen({ navigation }) {
   
       const orderData = {
         userId, // Corrected to camelCase
-        storeId: "676a9c0eb01d91572de6062d",
+        storeId: await AsyncStorage.getItem('storeId'),
         items: cartItems.map(item => ({
           itemId: item._id,
           itemName: item.itemName,
@@ -225,7 +226,7 @@ function CartScreen({ navigation }) {
       console.log("Calling this API with data:", orderData);
   
       const orderResponse = await axios.post(
-        "http://192.168.29.242:3500/user/placeorder",
+        "http://192.168.29.165:3500/user/placeorder",
         orderData
       );
   
@@ -758,7 +759,7 @@ const styles = StyleSheet.create({
 //   //   try {
 //   //     // Create order on your backend
 //   //     const orderResponse = await axios.post(
-//   //       "http://192.168.29.242:3500/payment/orders",
+//   //       "http://192.168.29.165:3500/payment/orders",
 //   //       {
 //   //         amount: totalAmount * 100,
 //   //       }
@@ -808,7 +809,7 @@ const styles = StyleSheet.create({
 //   //     }
 
 //   //     // Verify payment on your backend
-//   //     await axios.post("http://192.168.29.242:3500/payment/verify", {
+//   //     await axios.post("http://192.168.29.165:3500/payment/verify", {
 //   //       razorpay_order_id: response.razorpay_order_id,
 //   //       razorpay_payment_id: response.razorpay_payment_id,
 //   //       razorpay_signature: response.razorpay_signature,
