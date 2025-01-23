@@ -5,13 +5,13 @@ import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import SplashScreen from "react-native-splash-screen";
 import LottieView from "lottie-react-native";
 
-const SplashScreenComponent = ({ navigation }) => {
-  
+const SplashScreenComponent = ({ route }) => {
+  const { orderId } = route.params
   useEffect(() => {
     // Hide the splash screen after 2 seconds
     setTimeout(() => {
       // SplashScreen.hide();  // Hide splash screen
-      navigation.replace("Track");  // Navigate to Home screen after splash
+      navigation.replace("Track", {orderId : orderId});  // Navigate to Home screen after splash
     }, 1000); // Adjust the delay to your preference
   }, []);
   
