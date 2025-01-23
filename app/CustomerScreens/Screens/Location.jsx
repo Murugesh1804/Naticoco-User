@@ -14,21 +14,22 @@ import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
 import { MotiView } from "moti";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-export default function LocationScreen({ navigation }) {
+export default function LocationScreen({ navigation, route }) {
   const [location, setLocation] = useState(null);
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef(null);
   const [showSaveForm, setShowSaveForm] = useState(false);
   const [addressDetails, setAddressDetails] = useState({
-    tag: "",
+    type: "",
     address: "",
-    area: "",
-    city: "",
-    pincode: "",
+    latitude: null,
+    longitude: null,
+    landmark: "",
   });
   const [mapReady, setMapReady] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -78,9 +79,8 @@ export default function LocationScreen({ navigation }) {
         setAddressDetails({
           ...addressDetails,
           address: fullAddress,
-          area: addr.district || addr.subregion || "",
-          city: addr.city || "",
-          pincode: addr.postalCode || "",
+          latitude: latitude,
+          longitude: longitude
         });
       }
     } catch (error) {
@@ -99,58 +99,55 @@ export default function LocationScreen({ navigation }) {
   };
 
   const saveAddress = async () => {
-    if (!addressDetails.tag || !addressDetails.address) {
+    if (!addressDetails.type || !addressDetails.address || !location.latitude || !location.longitude) {
       Alert.alert("Error", "Please fill all required fields");
       return;
     }
-
+    console.log(addressDetails);
+    
     try {
-      const existingAddresses = await AsyncStorage.getItem("userAddresses");
-      let addresses = existingAddresses ? JSON.parse(existingAddresses) : [];
-
-      const newAddress = {
-        id: new Date().getTime().toString(),
-        type: "Custom",
-        ...addressDetails,
-        isDefault: addresses.length === 0,
-        coordinates: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-        },
-      };
-
-      addresses.push(newAddress);
-      await AsyncStorage.setItem("userAddresses", JSON.stringify(addresses));
-
-      // Create mock nearest store data
-      const mockNearestStore = {
-        id: "1",
-        name: "Local Store",
+      const credentials = await AsyncStorage.getItem('logincre');
+        const parsedCredentials = credentials ? JSON.parse(credentials) : null;
+        const userId = parsedCredentials?.token?.userId;
+      
+      const addressData = {
+        userId,
+        type: addressDetails.type,
         address: addressDetails.address,
-        coordinates: {
-          latitude: location.latitude,
-          longitude: location.longitude,
-        },
+        latitude: location.latitude,
+        longitude: location.longitude,
+        landmark: addressDetails.landmark || null
       };
 
-      // Store the mock nearest store data
-      await AsyncStorage.setItem(
-        "nearestStore",
-        JSON.stringify(mockNearestStore)
-      );
-      console.log("Address saved:", JSON.stringify(mockNearestStore));
+      const response = await axios.post('http://192.168.0.104:3500/location/address', addressData);
 
-      Alert.alert("Success", "Address saved successfully", [
-        {
-          text: "OK",
-          onPress: () =>
-            navigation.navigate("StoreType", {
-              screen: "Menu",
-              params: { storeData: mockNearestStore },
-            }),
-        },
-      ]);
+      if (response.status === 201) {
+        const mockNearestStore = {
+          id: "1",
+          name: "Local Store",
+          address: addressDetails.address,
+          coordinates: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+          },
+        };
+        console.log(mockNearestStore);
+        
+        await AsyncStorage.setItem("nearestStore", JSON.stringify(mockNearestStore));
+
+        Alert.alert("Success", "Address saved successfully", [
+          {
+            text: "OK",
+            onPress: () =>
+              navigation.navigate("StoreType", {
+                screen: "Menu",
+                params: { storeData: mockNearestStore },
+              }),
+          },
+        ]);
+      }
     } catch (error) {
+      console.error(error);
       Alert.alert("Error", "Could not save address");
     }
   };
@@ -293,7 +290,7 @@ export default function LocationScreen({ navigation }) {
         {!showSaveForm ? (
           <View>
             <Text style={styles.addressText}>
-              {addressDetails.address}, {addressDetails.area}
+              {addressDetails.address}
             </Text>
             <TouchableOpacity
               style={styles.confirmButton}
@@ -306,11 +303,11 @@ export default function LocationScreen({ navigation }) {
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Address Tag (e.g., Home, Office)"
+              placeholder="Address Type (e.g., Home, Office)"
               placeholderTextColor="#666"
-              value={addressDetails.tag}
+              value={addressDetails.type}
               onChangeText={(text) =>
-                setAddressDetails({ ...addressDetails, tag: text })
+                setAddressDetails({ ...addressDetails, type: text })
               }
             />
             <TextInput
@@ -324,20 +321,11 @@ export default function LocationScreen({ navigation }) {
             />
             <TextInput
               style={styles.input}
-              placeholder="Area"
-              value={addressDetails.area}
+              placeholder="Landmark"
+              value={addressDetails.landmark}
               onChangeText={(text) =>
-                setAddressDetails({ ...addressDetails, area: text })
+                setAddressDetails({ ...addressDetails, landmark: text })
               }
-            />
-            <TextInput
-              style={styles.input}
-              placeholder="Pincode"
-              value={addressDetails.pincode}
-              onChangeText={(text) =>
-                setAddressDetails({ ...addressDetails, pincode: text })
-              }
-              keyboardType="numeric"
             />
             <TouchableOpacity style={styles.saveButton} onPress={saveAddress}>
               <Text style={styles.saveButtonText}>Save Address</Text>
