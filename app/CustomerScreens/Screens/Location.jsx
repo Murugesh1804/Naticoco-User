@@ -103,54 +103,72 @@ export default function LocationScreen({ navigation, route }) {
       Alert.alert("Error", "Please fill all required fields");
       return;
     }
+  
     console.log(addressDetails);
-    
+  
     try {
       const credentials = await AsyncStorage.getItem('logincre');
-        const parsedCredentials = credentials ? JSON.parse(credentials) : null;
-        const userId = parsedCredentials?.token?.userId;
-      
+      const parsedCredentials = credentials ? JSON.parse(credentials) : null;
+      const userId = parsedCredentials?.token?.userId;
+  
       const addressData = {
         userId,
         type: addressDetails.type,
         address: addressDetails.address,
         latitude: location.latitude,
         longitude: location.longitude,
-        landmark: addressDetails.landmark || null
+        landmark: addressDetails.landmark || null,
       };
-
-      const response = await axios.post('http://192.168.0.104:3500/location/address', addressData);
-
-      if (response.status === 201) {
-        const mockNearestStore = {
-          id: "1",
-          name: "Local Store",
-          address: addressDetails.address,
-          coordinates: {
+  
+      // Save the address to the server
+      const saveResponse = await axios.post('http://192.168.232.249:3500/location/address', addressData);
+  
+      if (saveResponse.status === 201) {
+        // Find the nearest store and fetch its menu
+        const nearestStoreResponse = await axios.get('http://192.168.232.249:3500/userapi/nearest', {
+          params: {
             latitude: location.latitude,
             longitude: location.longitude,
           },
-        };
-        console.log(mockNearestStore);
-        
-        await AsyncStorage.setItem("nearestStore", JSON.stringify(mockNearestStore));
-
-        Alert.alert("Success", "Address saved successfully", [
-          {
-            text: "OK",
-            onPress: () =>
-              navigation.navigate("StoreType", {
-                screen: "Menu",
-                params: { storeData: mockNearestStore },
-              }),
-          },
-        ]);
+        });
+  
+        if (nearestStoreResponse.status === 200) {
+          const { nearestStoreId, menu, StoreLocations } = nearestStoreResponse.data;
+          console.log("Location",StoreLocations)
+          const mockNearestStore = {
+            id: nearestStoreId,
+            name: StoreLocations?.name || "Nearest Store",
+            address: StoreLocations?.address || addressDetails.address,
+            coordinates: {
+              latitude: StoreLocations?.locations?.latitude || location.latitude,
+              longitude: StoreLocations?.locations?.longitude || location.longitude,
+            },
+          };
+  
+          console.log("Store Location :",mockNearestStore);
+  
+          await AsyncStorage.setItem("nearestStore", JSON.stringify(mockNearestStore));
+  
+          Alert.alert("Success", "Address saved and nearest store menu fetched successfully", [
+            {
+              text: "OK",
+              onPress: () =>
+                navigation.navigate("StoreType", {
+                  screen: "Menu",
+                  params: { storeData: mockNearestStore, menu },
+                }),
+            },
+          ]);
+        } else {
+          Alert.alert("Info", "Address saved, but no nearby stores found.");
+        }
       }
     } catch (error) {
-      console.error(error);
-      Alert.alert("Error", "Could not save address");
+      console.error("Error:", error);
+      Alert.alert("Error", "Could not save address or fetch nearest store.");
     }
   };
+  
 
   const searchLocation = async (query) => {
     if (!query.trim()) {

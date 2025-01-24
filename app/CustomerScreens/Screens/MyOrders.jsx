@@ -78,7 +78,7 @@ export default function MyOrders() {
         const parsedCredentials = credentials ? JSON.parse(credentials) : null;
         const userId = parsedCredentials?.token?.userId;
         // console.log(userId);
-        const response = await axios.get(`http://192.168.0.104:3500/api/orders/myorders/${userId}`);
+        const response = await axios.get(`http://192.168.232.249:3500/api/orders/myorders/${userId}`);
         setOrders(response.data.orders);
         // console.log(orders[1].items);
       } catch (error) {

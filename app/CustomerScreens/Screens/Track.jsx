@@ -39,7 +39,7 @@ export default function TrackScreen({route}) {
   // Fetch order details
   const fetchOrderDetails = async () => {
     try {
-      const response = await axios.get(`http://192.168.29.242:3500/api/orders/${orderId}`);
+      const response = await axios.get(`http://192.168.232.249:3500/api/orders/${orderId}`);
       setOrder(response.data.order);
       setLoading(false);
     } catch (error) {
@@ -102,7 +102,7 @@ export default function TrackScreen({route}) {
           text: 'Yes',
           onPress: async () => {
             try {
-              await axios.patch(`http://192.168.29.242:3500/api/orders/${orderId}/cancel`);
+              await axios.patch(`http://192.168.232.249:3500/api/orders/${orderId}/cancel`);
               navigation.navigate('Home');
             } catch (error) {
               Alert.alert('Error', 'Could not cancel order');

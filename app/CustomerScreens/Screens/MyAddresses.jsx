@@ -78,7 +78,7 @@ export default function MyAddresses() {
         return;
       }
 
-      const response = await axios.get(`http://192.168.0.104:3500/location/address/${userId}`);
+      const response = await axios.get(`http://192.168.232.249:3500/location/address/${userId}`);
       if (response.status === 200) {
         setAddresses(response.data.addresses);
       }
@@ -113,7 +113,7 @@ export default function MyAddresses() {
         landmark: newAddress.landmark || null
       };
 
-      const response = await axios.post('http://192.168.0.104:3500/location/address', addressData);
+      const response = await axios.post('http://192.168.232.249:3500/location/address', addressData);
 
       if (response.status === 201) {
         fetchAddresses();
