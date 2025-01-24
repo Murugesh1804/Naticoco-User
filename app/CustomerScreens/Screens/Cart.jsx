@@ -104,7 +104,7 @@ function CartScreen({ navigation }) {
   const handleOnlinePayment = async () => {
     try {
       // Create order on your backend
-      const orderResponse = await axios.post('http://192.168.232.249:3500/payment/orders', {
+      const orderResponse = await axios.post('http://192.168.29.242:3500/payment/orders', {
         amount: totalAmount * 100,
       });
 
@@ -152,7 +152,7 @@ function CartScreen({ navigation }) {
       setIsLoading(true);
   
       // Verify payment on backend
-      const verificationResponse = await axios.post('http://192.168.232.249:3500/payment/verify', {
+      const verificationResponse = await axios.post('http://192.168.29.242:3500/payment/verify', {
         razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_signature: response.razorpay_signature
@@ -195,22 +195,38 @@ function CartScreen({ navigation }) {
 
   const placeOrder = async () => {
     try {
-      console.log("Place Order API is called here to backend:");
+      console.log("Place Order API is called to backend:");
   
-      // Get userId from AsyncStorage
-      const data = await AsyncStorage.getItem("logincre");
-      if (!data) throw new Error("User not logged in");
+      // Validate cartItems
+      if (!Array.isArray(cartItems) || cartItems.length === 0) {
+        throw new Error("Cart is empty. Please add items to proceed.");
+      }
   
-      const parsedData = JSON.parse(data);
-      console.log("Token Data:", parsedData.token);
-      console.log("UserId:", parsedData.token?.userId);
+      // Retrieve user data from AsyncStorage
+      const userData = await AsyncStorage.getItem("logincre");
+      if (!userData) throw new Error("User not logged in");
   
-      const userId = parsedData.token?.userId; // Ensure userId is in camelCase
+      const parsedUserData = JSON.parse(userData);
+      console.log("Token Data:", parsedUserData.token);
+  
+      const userId = parsedUserData.token?.userId;
       if (!userId) throw new Error("Invalid UserId");
   
+      // Retrieve nearest store details from AsyncStorage
+      const storeData = await AsyncStorage.getItem("nearestStore");
+      if (!storeData) throw new Error("Nearest store data not found");
+  
+      const parsedStoreData = JSON.parse(storeData);
+      console.log("Nearest Store Data:", parsedStoreData);
+  
+      const storeId = parsedStoreData.id;
+      const latitude = parsedStoreData.coordinates.latitude;
+      const longitude = parsedStoreData.coordinates.longitude;
+  
+      // Construct order data
       const orderData = {
-        userId, // Corrected to camelCase
-        storeId: "676a9c0eb01d91572de6062d",
+        userId,
+        storeId,
         items: cartItems.map(item => ({
           itemId: item._id,
           itemName: item.itemName,
@@ -219,28 +235,34 @@ function CartScreen({ navigation }) {
         })),
         amount: totalAmount,
         paymentStatus: "Completed",
-        location: { latitude: null, longitude: null },
+        storeLocation: {
+          latitude: latitude,
+          longitude: longitude,
+        },
+        deliveryLocation: { latitude: 0, longitude: 0 }, // Placeholder, replace with actual values
       };
   
-      console.log("Calling this API with data:", orderData);
+      console.log("Calling API with data:", orderData);
   
-      const orderResponse = await axios.post(
-        "http://192.168.232.249:3500/user/placeorder",
+      // Make the API call
+      const response = await axios.post(
+        "http://192.168.29.242:3500/user/placeorder",
         orderData
       );
   
-      if (orderResponse.data.message === "Order created successfully") {
+      if (response.data.message === "Order created successfully") {
         Alert.alert("Success", "Payment successful and order placed!");
-        // clearCart();
         navigation.navigate("Success", {
           paymentMethod: "online",
-          orderId: orderResponse.data.order.orderId,
+          orderId: response.data.order.orderId,
         });
+        clearCart(); // Clear the cart after successful order
       } else {
         throw new Error("Failed to create order");
       }
     } catch (error) {
       console.error("Error found:", error.message || error);
+      Alert.alert("Error", error.message || "Something went wrong");
     }
   };
   
@@ -758,7 +780,7 @@ const styles = StyleSheet.create({
 //   //   try {
 //   //     // Create order on your backend
 //   //     const orderResponse = await axios.post(
-//   //       "http://192.168.232.249:3500/payment/orders",
+//   //       "http://192.168.29.242:3500/payment/orders",
 //   //       {
 //   //         amount: totalAmount * 100,
 //   //       }
@@ -808,7 +830,7 @@ const styles = StyleSheet.create({
 //   //     }
 
 //   //     // Verify payment on your backend
-//   //     await axios.post("http://192.168.232.249:3500/payment/verify", {
+//   //     await axios.post("http://192.168.29.242:3500/payment/verify", {
 //   //       razorpay_order_id: response.razorpay_order_id,
 //   //       razorpay_payment_id: response.razorpay_payment_id,
 //   //       razorpay_signature: response.razorpay_signature,

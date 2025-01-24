@@ -121,20 +121,19 @@ export default function LocationScreen({ navigation, route }) {
       };
   
       // Save the address to the server
-      const saveResponse = await axios.post('http://192.168.232.249:3500/location/address', addressData);
+      const saveResponse = await axios.post('http://192.168.29.242:3500/location/address', addressData);
   
       if (saveResponse.status === 201) {
         // Find the nearest store and fetch its menu
-        const nearestStoreResponse = await axios.get('http://192.168.232.249:3500/userapi/nearest', {
+        const nearestStoreResponse = await axios.get('http://192.168.29.242:3500/userapi/nearest', {
           params: {
             latitude: location.latitude,
             longitude: location.longitude,
           },
         });
-  
+        console.log("Response",nearestStoreResponse.status)
         if (nearestStoreResponse.status === 200) {
           const { nearestStoreId, menu, StoreLocations } = nearestStoreResponse.data;
-          console.log("Location",StoreLocations)
           const mockNearestStore = {
             id: nearestStoreId,
             name: StoreLocations?.name || "Nearest Store",

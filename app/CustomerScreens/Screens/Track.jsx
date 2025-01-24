@@ -1,5 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Linking, Alert, FlatList } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Dimensions, 
+  Linking, 
+  Alert, 
+  FlatList,
+  ActivityIndicator,
+  StyleSheet 
+} from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,115 +22,117 @@ import Animated, {
   withSpring,
   runOnJS
 } from 'react-native-reanimated';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import BackButton from '../../../app/components/BackButton';
 import { scale, verticalScale, moderateScale } from '../../utils/responsive';
 import axios from 'axios';
-import { useAuth } from '../../context/AuthContext';  // Assuming you have an auth context
-import socket from '../../services/socketService';  // Real-time socket connection
+import socket from '../../services/socketService';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const GOOGLE_MAPS_KEY = 'AIzaSyD9YLhonLv3JjCCVjBv06W1el67IXr19bY'; 
 
-export default function TrackScreen({route}) {
+const ORDER_STATUSES = {
+  PENDING: { color: '#F8931F', icon: 'time-outline', text: 'Order Received' },
+  ACCEPTED: { color: '#4CAF50', icon: 'checkmark-circle-outline', text: 'Order Accepted' },
+  PREPARING: { color: '#2196F3', icon: 'restaurant-outline', text: 'Preparing' },
+  READY: { color: '#9C27B0', icon: 'bag-check-outline', text: 'Ready for Pickup' },
+  OUT_FOR_DELIVERY: { color: '#FF9800', icon: 'bicycle-outline', text: 'Out for Delivery' },
+  COMPLETED: { color: '#89C73A', icon: 'checkmark-done-circle-outline', text: 'Delivered' },
+  CANCELLED: { color: '#F44336', icon: 'close-circle-outline', text: 'Cancelled' }
+};
+
+export default function TrackScreen({ route }) {
   const navigation = useNavigation();
-  const { user } = useAuth();
   const { orderId } = route.params;
-  console.log(orderId);
+
   const [order, setOrder] = useState(null);
   const [userLocation, setUserLocation] = useState(null);
   const [driverLocation, setDriverLocation] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  // Animation states
-  const translateY = useSharedValue(0);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [error, setError] = useState(null);
 
-  // Fetch order details
-  const fetchOrderDetails = async () => {
+  const translateY = useSharedValue(0);
+
+  const fetchOrderDetails = useCallback(async () => {
     try {
-      const response = await axios.get(`http://192.168.232.249:3500/api/orders/${orderId}`);
-      setOrder(response.data.order);
+      setLoading(true);
+      const response = await axios.post(
+        `http://192.168.29.242:3500/user/getorderId`, 
+        { orderId }
+      );
+      
+      const orderData = response.data.order;
+      
+      let deliveryPersonData = null;
+      try {
+        if (response.data.deliveryPerson) {
+          deliveryPersonData = response.data.deliveryPerson;
+        }
+      } catch (delPersonError) {
+        console.log('No delivery person details available');
+      }
+      
+      const updatedOrderData = {
+        ...orderData,
+        status: orderData.status || 'PENDING',
+        deliveryPersonId: deliveryPersonData?.id || null,
+        deliveryPersonName: deliveryPersonData?.name || 'Unassigned',
+        deliveryPersonPhone: deliveryPersonData?.phone || null,
+        estimatedDeliveryTime: orderData.estimatedDeliveryTime || 'Not available'
+      };
+      
+      setOrder(updatedOrderData);
+      
+      if (!orderData.deliveryLocation || 
+          (orderData.deliveryLocation.latitude === 0 && 
+           orderData.deliveryLocation.longitude === 0)) {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          let location = await Location.getCurrentPositionAsync({});
+          setUserLocation({
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+          });
+        }
+      } else {
+        setUserLocation(orderData.deliveryLocation);
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching order details:', error);
-      Alert.alert('Error', 'Could not fetch order details');
+      setError('Unable to fetch order details');
       setLoading(false);
     }
-  };
+  }, [orderId]);
 
-  // Real-time location tracking
-  const setupRealTimeTracking = () => {
-    // Listen for driver location updates
+  const setupRealTimeTracking = useCallback(() => {
     socket.on(`driver_location_${orderId}`, (location) => {
       setDriverLocation({
         latitude: location.latitude,
         longitude: location.longitude,
       });
     });
-  
-    // Listen for order status updates
+
     socket.on(`order_status_${orderId}`, (status) => {
       setOrder((prevOrder) => ({
         ...prevOrder,
         status: status,
       }));
     });
-  };;
+  }, [orderId]);
 
   useEffect(() => {
     fetchOrderDetails();
     setupRealTimeTracking();
 
-    // Get user's current location
-    const getLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
-        let location = await Location.getCurrentPositionAsync({});
-        setUserLocation({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
-      }
-    };
-
-    getLocation();
-
     return () => {
       socket.off(`driver_location_${orderId}`);
       socket.off(`order_status_${orderId}`);
     };
-  }, [orderId]);
+  }, [orderId, fetchOrderDetails, setupRealTimeTracking]);
 
-  const handleCancel = async () => {
-    Alert.alert(
-      'Cancel Order',
-      'Are you sure you want to cancel the order?',
-      [
-        { text: 'No', style: 'cancel' },
-        {
-          text: 'Yes',
-          onPress: async () => {
-            try {
-              await axios.patch(`http://192.168.232.249:3500/api/orders/${orderId}/cancel`);
-              navigation.navigate('Home');
-            } catch (error) {
-              Alert.alert('Error', 'Could not cancel order');
-            }
-          },
-          style: 'destructive',
-        },
-      ]
-    );
-  };
-
-  const handleCall = () => {
-    if (order?.deliveryPersonPhone) {
-      Linking.openURL(`tel:${order.deliveryPersonPhone}`);
-    }
-  };
-
-  // Gesture handler for sliding card
   const gestureHandler = useAnimatedGestureHandler({
     onStart: (_, ctx) => {
       ctx.startY = translateY.value;
@@ -144,10 +156,80 @@ export default function TrackScreen({route}) {
     transform: [{ translateY: translateY.value }],
   }));
 
-  if (loading || !order) {
+  const handleCancel = async () => {
+    Alert.alert(
+      'Cancel Order',
+      'Are you sure you want to cancel the order?',
+      [
+        { text: 'No', style: 'cancel' },
+        {
+          text: 'Yes',
+          onPress: async () => {
+            try {
+              await axios.patch(`http://192.168.29.242:3500/api/orders/${orderId}/cancel`);
+              navigation.navigate('Home');
+            } catch (error) {
+              Alert.alert('Error', 'Could not cancel order');
+            }
+          },
+          style: 'destructive',
+        },
+      ]
+    );
+  };
+
+  const handleCall = () => {
+    if (order?.deliveryPersonPhone) {
+      Linking.openURL(`tel:${order.deliveryPersonPhone}`);
+    } else {
+      Alert.alert('No Contact', 'Delivery person contact not available.');
+    }
+  };
+
+  const renderOrderTimeline = () => {
+    return Object.keys(ORDER_STATUSES).map((status) => {
+      const isCurrentStatus = order.status === status;
+      const isPreviousStatus = Object.keys(ORDER_STATUSES)
+        .slice(0, Object.keys(ORDER_STATUSES).indexOf(order.status))
+        .includes(status);
+      const { color, icon } = ORDER_STATUSES[status];
+      
+      return (
+        <View key={status} style={styles.timelineItem}>
+          <Ionicons 
+            name={isCurrentStatus ? icon : (isPreviousStatus ? "checkmark-circle" : icon)} 
+            size={scale(24)} 
+            color={isCurrentStatus ? color : (isPreviousStatus ? "#89C73A" : "#DDD")} 
+          />
+          <Text style={[
+            styles.timelineText, 
+            isCurrentStatus && styles.currentStatusText,
+            isPreviousStatus && styles.completedStatusText
+          ]}>
+            {status.replace('_', ' ')}
+          </Text>
+        </View>
+      );
+    });
+  };
+
+  if (loading) {
     return (
-      <View style={styles.container}>
-        <Text>Loading order details...</Text>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#F8931F" />
+        <Text style={styles.loadingText}>Loading Order Details...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Ionicons name="sad-outline" size={64} color="#F44336" />
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity onPress={fetchOrderDetails} style={styles.retryButton}>
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
       </View>
     );
   }
@@ -155,29 +237,32 @@ export default function TrackScreen({route}) {
   return (
     <GestureHandlerRootView style={styles.container}>
       <BackButton color="white" />
-      <View style={styles.container}>
-        {userLocation && driverLocation && (
-          <MapView
-            style={[styles.map, isExpanded && { height: '40%' }]}
-            initialRegion={{
-              latitude: (userLocation.latitude + driverLocation.latitude) / 2,
-              longitude: (userLocation.longitude + driverLocation.longitude) / 2,
-              latitudeDelta: 0.1,
-              longitudeDelta: 0.1,
-            }}
-          >
-            <Marker coordinate={userLocation} title="Delivery Location">
-              <View style={styles.driverMarker}>
-                <Ionicons name="location" size={scale(24)} color="white" />
-              </View>
-            </Marker>
-            
+      
+      {userLocation && driverLocation && (
+        <MapView
+          style={[styles.map, isExpanded && { height: '40%' }]}
+          initialRegion={{
+            latitude: (userLocation.latitude + driverLocation.latitude) / 2,
+            longitude: (userLocation.longitude + driverLocation.longitude) / 2,
+            latitudeDelta: 0.1,
+            longitudeDelta: 0.1,
+          }}
+        >
+          <Marker coordinate={userLocation} title="Delivery Location">
+            <View style={styles.driverMarker}>
+              <Ionicons name="location" size={scale(24)} color="white" />
+            </View>
+          </Marker>
+          
+          {driverLocation && (
             <Marker coordinate={driverLocation} title="Driver Location">
               <View style={styles.driverMarker}>
                 <Ionicons name="bicycle" size={scale(24)} color="white" />
               </View>
             </Marker>
+          )}
 
+          {driverLocation && (
             <MapViewDirections
               origin={driverLocation}
               destination={userLocation}
@@ -186,19 +271,22 @@ export default function TrackScreen({route}) {
               strokeColor="#F8931F"
               optimizeWaypoints={true}
             />
-          </MapView>
-        )}
+          )}
+        </MapView>
+      )}
 
-        <PanGestureHandler onGestureEvent={gestureHandler}>
-          <Animated.View style={[styles.deliveryCard, animatedStyle]}>
-            <View style={styles.pullBar} />
-            <View style={styles.statusContainer}>
-              <Text style={styles.statusText}>{order.status}</Text>
-              <Text style={styles.timeText}>
-                Estimated Delivery: {order.estimatedDeliveryTime || 'Not available'}
-              </Text>
-            </View>
+      <PanGestureHandler onGestureEvent={gestureHandler}>
+        <Animated.View style={[styles.deliveryCard, animatedStyle]}>
+          <View style={styles.pullBar} />
+          
+          <View style={styles.statusContainer}>
+            <Text style={styles.statusText}>{order.status.replace('_', ' ')}</Text>
+            <Text style={styles.timeText}>
+              Estimated Delivery: {order.estimatedDeliveryTime || 'Not available'}
+            </Text>
+          </View>
 
+          {order.deliveryPersonId ? (
             <View style={styles.driverInfo}>
               <View style={styles.driverDetails}>
                 <Ionicons name="person-circle-outline" size={scale(40)} color="#666" />
@@ -212,58 +300,53 @@ export default function TrackScreen({route}) {
                 <Ionicons name="call" size={scale(24)} color="white" />
               </TouchableOpacity>
             </View>
-
-            <View style={styles.timeline}>
-              {['PENDING', 'PREPARING', 'READY', 'COMPLETED'].map((status, index) => (
-                <View key={status} style={styles.timelineItem}>
-                  <Ionicons 
-                    name={order.status === status ? "time" : "checkmark-circle"} 
-                    size={scale(24)} 
-                    color={order.status === status ? "#F8931F" : "#89C73A"} 
-                  />
-                  <Text style={styles.timelineText}>{status}</Text>
-                </View>
-              ))}
+          ) : (
+            <View style={styles.driverInfo}>
+              <Text style={styles.statusText}>Waiting for delivery partner...</Text>
             </View>
+          )}
 
-            {isExpanded && (
-              <View style={styles.expandedContent}>
-                <Text style={styles.sectionTitle}>Order Details</Text>
-                <View style={styles.orderDetails}>
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Order ID</Text>
-                    <Text style={styles.detailValue}>#{order.orderId}</Text>
-                  </View>
-                  <View style={styles.cart}>
-                    <Text style={styles.detailLabel}>Items</Text>
-                    <FlatList 
-                      data={order.items}
-                      keyExtractor={(item) => item.itemId}
-                      renderItem={({ item }) => (
-                        <Text style={styles.detailValueItem}>
-                          {item.itemName} x {item.quantity}
-                        </Text>
-                      )}
-                    />
-                  </View>
-                  <View style={styles.detailItem}>
-                    <Text style={styles.detailLabel}>Total Amount</Text>
-                    <Text style={styles.detailValue}>₹{order.amount}</Text>
-                  </View>
+          <View style={styles.timeline}>
+            {renderOrderTimeline()}
+          </View>
+
+          {isExpanded && (
+            <View style={styles.expandedContent}>
+              <Text style={styles.sectionTitle}>Order Details</Text>
+              <View style={styles.orderDetails}>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Order ID</Text>
+                  <Text style={styles.detailValue}>#{order.orderId}</Text>
                 </View>
-                <View style={styles.actionButtons}>
-                  <TouchableOpacity style={styles.cancel} onPress={handleCancel}>
-                    <Text style={styles.buttonText}>Cancel Order</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.button}>
-                    <Text style={styles.buttonText}>Help for Order</Text>
-                  </TouchableOpacity>
+                <View style={styles.cart}>
+                  <Text style={styles.detailLabel}>Items</Text>
+                  <FlatList 
+                    data={order.items}
+                    keyExtractor={(item) => item.itemId}
+                    renderItem={({ item }) => (
+                      <Text style={styles.detailValueItem}>
+                        {item.itemName} x {item.quantity}
+                      </Text>
+                    )}
+                  />
+                </View>
+                <View style={styles.detailItem}>
+                  <Text style={styles.detailLabel}>Total Amount</Text>
+                  <Text style={styles.detailValue}>₹{order.amount}</Text>
                 </View>
               </View>
-            )}
-          </Animated.View>
-        </PanGestureHandler>
-      </View>
+              <View style={styles.actionButtons}>
+                <TouchableOpacity style={styles.cancel} onPress={handleCancel}>
+                  <Text style={styles.buttonText}>Cancel Order</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.button}>
+                  <Text style={styles.buttonText}>Help for Order</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+        </Animated.View>
+      </PanGestureHandler>
     </GestureHandlerRootView>
   );
 }
