@@ -55,7 +55,6 @@ export default function MyAddresses() {
 
         setNewAddress(prev => ({
           ...prev,
-          address: fullAddress,
           latitude,
           longitude
         }));
@@ -139,8 +138,26 @@ export default function MyAddresses() {
     })));
   };
 
-  const handleDeleteAddress = (id) => {
-    setAddresses(addresses.filter(addr => addr.id !== id));
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      const credentials = await AsyncStorage.getItem('logincre');
+      const parsedCredentials = credentials ? JSON.parse(credentials) : null;
+      const userId = parsedCredentials?.token?.userId;
+
+      if (!userId) {
+        alert('Please login to delete address');
+        return;
+      }
+
+      const response = await axios.delete(`http://192.168.0.104:3500/location/address/${userId}/${addressId}`);
+
+      if (response.status === 200) {
+        fetchAddresses();
+      }
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      alert('Could not delete address');
+    }
   };
 
   const AddressCard = ({ address }) => (
@@ -176,7 +193,7 @@ export default function MyAddresses() {
         )}
         <TouchableOpacity 
           style={styles.actionButton}
-          onPress={() => handleDeleteAddress(address.id)}
+          onPress={() => handleDeleteAddress(address._id)}
         >
           <Ionicons name="trash-outline" size={20} color="#F8931F" />
           <Text style={styles.actionButtonText}>Delete</Text>
