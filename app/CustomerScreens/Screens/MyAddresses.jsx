@@ -6,68 +6,129 @@ import { useNavigation } from '@react-navigation/native';
 import ScreenBackground from '../Components/ScreenBackground';
 import { TouchableWithoutFeedback } from 'react-native-gesture-handler';
 import Animated from 'react-native-reanimated';
-
-// Mock data for addresses (replace with actual data from backend)
-const initialAddresses = [
-  {
-    id: '1',
-    type: 'Custom',
-    tag: 'Home',
-    address: '123 Main Street',
-    area: 'Anna Nagar',
-    city: 'Chennai',
-    pincode: '600001',
-    isDefault: true,
-  },
-  {
-    id: '2',
-    type: 'Custom',
-    tag: 'Office',
-    address: '456 Office Complex',
-    area: 'T Nagar',
-    city: 'Chennai',
-    pincode: '600017',
-    isDefault: false,
-  },
-];
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import * as Location from 'expo-location';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export default function MyAddresses() {
   const navigation = useNavigation();
-  const [addresses, setAddresses] = useState(initialAddresses);
+  const [addresses, setAddresses] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newAddress, setNewAddress] = useState({
-    type: 'Custom',
-    tag: '',
+    type: '',
     address: '',
-    area: '',
-    city: 'Chennai',
-    pincode: '',
+    landmark: '',
+    latitude: null,
+    longitude: null
   });
 
-  const handleAddAddress = () => {
-    if (!newAddress.tag || !newAddress.address || !newAddress.area || !newAddress.pincode) {
-      alert('Please fill in all fields');
+  useEffect(() => {
+    fetchAddresses();
+  }, []);
+
+  const getCurrentLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        alert("Permission denied. Location access is required.");
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+
+      // Get address from coordinates
+      const response = await Location.reverseGeocodeAsync({
+        latitude,
+        longitude
+      });
+
+      if (response[0]) {
+        const addr = response[0];
+        const street = addr.street || "";
+        const name = addr.name || "";
+        const city = addr.city || "";
+        const region = addr.region || "";
+        const fullAddress = `${street} ${name}, ${city}, ${region}`.trim();
+
+        setNewAddress(prev => ({
+          ...prev,
+          latitude,
+          longitude
+        }));
+      }
+
+    } catch (error) {
+      console.error("Error getting location:", error);
+      alert("Could not get current location");
+    }
+  };
+
+  const fetchAddresses = async () => {
+    try {
+      const credentials = await AsyncStorage.getItem('logincre');
+      const parsedCredentials = credentials ? JSON.parse(credentials) : null;
+      const userId = parsedCredentials?.token?.userId;
+      
+      if (!userId) {
+        alert('Please login to view addresses');
+        return;
+      }
+
+      const response = await axios.get(`http://192.168.29.165:3500/location/address/${userId}`);
+      if (response.status === 200) {
+        setAddresses(response.data.addresses);
+      }
+    } catch (error) {
+      console.error('Error fetching addresses:', error);
+      alert('Could not fetch addresses');
+    }
+  };
+
+  const handleAddAddress = async () => {
+    if (!newAddress.type || !newAddress.address || !newAddress.latitude || !newAddress.longitude) {
+      alert('Please fill in all required fields and set location');
       return;
     }
 
-    const address = {
-      id: new Date().getTime().toString(),
-      ...newAddress,
-      isDefault: addresses.length === 0,
-    };
+    try {
+      const credentials = await AsyncStorage.getItem('logincre');
+      const parsedCredentials = credentials ? JSON.parse(credentials) : null;
+      const userId = parsedCredentials?.token?.userId;
 
-    setAddresses([...addresses, address]);
-    setModalVisible(false);
-    setNewAddress({
-      type: 'Custom',
-      tag: '',
-      address: '',
-      area: '',
-      city: 'Chennai',
-      pincode: '',
-    });
+      if (!userId) {
+        alert('Please login to add address');
+        return;
+      }
+
+      const addressData = {
+        userId,
+        type: newAddress.type,
+        address: newAddress.address,
+        latitude: newAddress.latitude,
+        longitude: newAddress.longitude,
+        landmark: newAddress.landmark || null
+      };
+
+      const response = await axios.post('http://192.168.29.165:3500/location/address', addressData);
+
+      if (response.status === 201) {
+        fetchAddresses();
+        setModalVisible(false);
+        setNewAddress({
+          type: '',
+          address: '',
+          landmark: '',
+          latitude: null,
+          longitude: null
+        });
+      }
+    } catch (error) {
+      console.error('Error adding address:', error);
+      alert('Could not add address');
+    }
   };
 
   const handleSetDefault = (id) => {
@@ -77,8 +138,26 @@ export default function MyAddresses() {
     })));
   };
 
-  const handleDeleteAddress = (id) => {
-    setAddresses(addresses.filter(addr => addr.id !== id));
+  const handleDeleteAddress = async (addressId) => {
+    try {
+      const credentials = await AsyncStorage.getItem('logincre');
+      const parsedCredentials = credentials ? JSON.parse(credentials) : null;
+      const userId = parsedCredentials?.token?.userId;
+
+      if (!userId) {
+        alert('Please login to delete address');
+        return;
+      }
+      console.log(userId,addressId);
+      const response = await axios.delete(`http://192.168.29.165:3500/location/address/${userId}/${addressId}`);
+
+      if (response.status === 200) {
+        fetchAddresses();
+      }
+    } catch (error) {
+      console.error('Error deleting address:', error);
+      alert('Could not delete address');
+    }
   };
 
   const AddressCard = ({ address }) => (
@@ -90,7 +169,7 @@ export default function MyAddresses() {
             size={20} 
             color="#F8931F" 
           />
-          <Text style={styles.addressType}>{address.tag}</Text>
+          <Text style={styles.addressType}>{address.type}</Text>
         </View>
         {address.isDefault && (
           <View style={styles.defaultBadge}>
@@ -100,8 +179,7 @@ export default function MyAddresses() {
       </View>
 
       <Text style={styles.addressText}>{address.address}</Text>
-      <Text style={styles.addressText}>{address.area}</Text>
-      <Text style={styles.addressText}>{address.city} - {address.pincode}</Text>
+      {address.landmark && <Text style={styles.addressText}>Landmark: {address.landmark}</Text>}
 
       <View style={styles.actionRow}>
         {!address.isDefault && (
@@ -115,7 +193,7 @@ export default function MyAddresses() {
         )}
         <TouchableOpacity 
           style={styles.actionButton}
-          onPress={() => handleDeleteAddress(address.id)}
+          onPress={() => handleDeleteAddress(address._id)}
         >
           <Ionicons name="trash-outline" size={20} color="#F8931F" />
           <Text style={styles.actionButtonText}>Delete</Text>
@@ -126,7 +204,6 @@ export default function MyAddresses() {
 
   return (
     <ScreenBackground style={styles.container}>
-
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#333" />
@@ -174,44 +251,41 @@ export default function MyAddresses() {
                   keyboardShouldPersistTaps="handled"
                 >
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Address Tag</Text>
+                    <Text style={styles.inputLabel}>Address Type</Text>
                     <TextInput
                       style={styles.input}
-                      value={newAddress.tag}
-                      onChangeText={(text) => setNewAddress({...newAddress, tag: text})}
-                      placeholder="e.g., Home, Office, Mom's House"
+                      value={newAddress.type}
+                      onChangeText={(text) => setNewAddress({...newAddress, type: text})}
+                      placeholder="e.g., Home, Office, etc."
                     />
                   </View>
 
                   <View style={styles.inputGroup}>
                     <Text style={styles.inputLabel}>Complete Address</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={newAddress.address}
-                      onChangeText={(text) => setNewAddress({...newAddress, address: text})}
-                      placeholder="House/Flat No., Building Name"
-                    />
+                    <View style={styles.addressInputContainer}>
+                      <TextInput
+                        style={[styles.input, styles.addressInput]}
+                        value={newAddress.address}
+                        onChangeText={(text) => setNewAddress({...newAddress, address: text})}
+                        placeholder="Enter full address"
+                        multiline
+                      />
+                      <TouchableOpacity 
+                        style={styles.locationButton}
+                        onPress={getCurrentLocation}
+                      >
+                        <Ionicons name="locate" size={24} color="#F8931F" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Area</Text>
+                    <Text style={styles.inputLabel}>Landmark (Optional)</Text>
                     <TextInput
                       style={styles.input}
-                      value={newAddress.area}
-                      onChangeText={(text) => setNewAddress({...newAddress, area: text})}
-                      placeholder="Street Name, Area"
-                    />
-                  </View>
-
-                  <View style={styles.inputGroup}>
-                    <Text style={styles.inputLabel}>Pincode</Text>
-                    <TextInput
-                      style={styles.input}
-                      value={newAddress.pincode}
-                      onChangeText={(text) => setNewAddress({...newAddress, pincode: text})}
-                      placeholder="6-digit Pincode"
-                      keyboardType="numeric"
-                      maxLength={6}
+                      value={newAddress.landmark}
+                      onChangeText={(text) => setNewAddress({...newAddress, landmark: text})}
+                      placeholder="Nearby landmark"
                     />
                   </View>
                 </ScrollView>
@@ -357,6 +431,17 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  addressInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  addressInput: {
+    flex: 1,
+    marginRight: 10,
+  },
+  locationButton: {
+    padding: 10,
+  },
   input: {
     backgroundColor: 'white',
     borderWidth: 1,
@@ -389,4 +474,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-}); 
+});
