@@ -1,13 +1,20 @@
-import axios from 'axios';
-import { Buffer } from 'buffer';
+import axios from "axios";
+import { Buffer } from "buffer";
 
 async function getImage(imag) {
-  const img = imag.split('/ImageStore/')[1];
+  const img = imag.split("/ImageStore/")[1];
+  console.log(img);
   try {
-    const response = await axios.get(`http://192.168.29.165:3500/images/${img}`, {
-      responseType: 'arraybuffer',
-    });
-    return `data:image/jpeg;base64,${Buffer.from(response.data, 'binary').toString('base64')}`;
+    const response = await axios.get(
+      `https://nati-coco-server.onrender.com/images/${img}`,
+      {
+        responseType: "arraybuffer",
+      }
+    );
+    return `data:image/jpeg;base64,${Buffer.from(
+      response.data,
+      "binary"
+    ).toString("base64")}`;
   } catch (error) {
     console.error("Error fetching image:", error);
     return null;

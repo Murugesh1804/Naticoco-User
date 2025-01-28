@@ -2,7 +2,7 @@
 
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://192.168.29.165:3500"; // Replace with your backend URL
+const SOCKET_URL = "https://nati-coco-server.onrender.com"; // Replace with your backend URL
 
 // Initialize the socket
 const socket = io(SOCKET_URL, {

@@ -100,7 +100,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
       {
@@ -117,8 +117,9 @@ export default function ProfileScreen() {
               duration: 300,
               useNativeDriver: true,
             }),
-          ]).start(() => {
+          ]).start(async () => {
             navigation.replace("Login");
+            await AsyncStorage.clear();
           });
         },
         style: "destructive",
@@ -160,21 +161,14 @@ export default function ProfileScreen() {
         >
           <View style={styles.profileContainer}>
             <View style={styles.profilebackdrop} />
-            
-            <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
-              {image ? (
-                <Image source={{ uri: image }} style={styles.profileImage} />
-              ) : (
-                <LinearGradient
-                  colors={["#fff5e6", "#ffffff"]}
-                  style={styles.placeholderImage}
-                >
-                  <Ionicons name="person" size={50} color="#F8931F" />
-                </LinearGradient>
-              )}
-              <View style={styles.editBadge}>
-                <Ionicons name="camera" size={16} color="white" />
-              </View>
+
+            <TouchableOpacity style={styles.imageContainer}>
+              <LinearGradient
+                colors={["#fff5e6", "#ffffff"]}
+                style={styles.placeholderImage}
+              >
+                <Ionicons name="person" size={50} color="#F8931F" />
+              </LinearGradient>
             </TouchableOpacity>
 
             <Text style={styles.username}>{name}</Text>
@@ -236,7 +230,7 @@ export default function ProfileScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.logoutButton}
-                  onPress={() => navigation.navigate('Support')}
+                  onPress={() => navigation.navigate("Support")}
                 >
                   <LinearGradient
                     colors={["#F8931F", "#f4a543"]}

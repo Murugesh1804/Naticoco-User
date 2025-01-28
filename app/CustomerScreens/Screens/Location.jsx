@@ -80,7 +80,7 @@ export default function LocationScreen({ navigation, route }) {
           ...addressDetails,
           address: fullAddress,
           latitude: latitude,
-          longitude: longitude
+          longitude: longitude,
         });
       }
     } catch (error) {
@@ -99,18 +99,23 @@ export default function LocationScreen({ navigation, route }) {
   };
 
   const saveAddress = async () => {
-    if (!addressDetails.type || !addressDetails.address || !location.latitude || !location.longitude) {
+    if (
+      !addressDetails.type ||
+      !addressDetails.address ||
+      !location.latitude ||
+      !location.longitude
+    ) {
       Alert.alert("Error", "Please fill all required fields");
       return;
     }
-  
+
     console.log(addressDetails);
-  
+    await AsyncStorage.setItem("liveLocation", JSON.stringify(addressDetails));
     try {
-      const credentials = await AsyncStorage.getItem('logincre');
+      const credentials = await AsyncStorage.getItem("logincre");
       const parsedCredentials = credentials ? JSON.parse(credentials) : null;
       const userId = parsedCredentials?.token?.userId;
-  
+
       const addressData = {
         userId,
         type: addressDetails.type,
@@ -119,45 +124,61 @@ export default function LocationScreen({ navigation, route }) {
         longitude: location.longitude,
         landmark: addressDetails.landmark || null,
       };
-  
+
       // Save the address to the server
-      const saveResponse = await axios.post('http://192.168.29.165:3500/location/address', addressData);
-  
+      const saveResponse = await axios.post(
+        "https://nati-coco-server.onrender.com/location/address",
+        addressData
+      );
+
       if (saveResponse.status === 201) {
         // Find the nearest store and fetch its menu
-        const nearestStoreResponse = await axios.get('http://192.168.29.165:3500/userapi/nearest', {
-          params: {
-            latitude: location.latitude,
-            longitude: location.longitude,
-          },
-        });
-        console.log("Response",nearestStoreResponse.status)
+        const nearestStoreResponse = await axios.get(
+          "https://nati-coco-server.onrender.com/userapi/nearest",
+          {
+            params: {
+              latitude: location.latitude,
+              longitude: location.longitude,
+            },
+          }
+        );
+        console.log("Response", nearestStoreResponse.status);
         if (nearestStoreResponse.status === 200) {
-          const { nearestStoreId, menu, StoreLocations } = nearestStoreResponse.data;
+          const { nearestStoreId, menu, StoreLocations } =
+            nearestStoreResponse.data;
           const mockNearestStore = {
             id: nearestStoreId,
             name: StoreLocations?.name || "Nearest Store",
             address: StoreLocations?.address || addressDetails.address,
             coordinates: {
-              latitude: StoreLocations?.locations?.latitude || location.latitude,
-              longitude: StoreLocations?.locations?.longitude || location.longitude,
+              latitude:
+                StoreLocations?.locations?.latitude || location.latitude,
+              longitude:
+                StoreLocations?.locations?.longitude || location.longitude,
             },
           };
-  
-          console.log("Store Location :",mockNearestStore);
-  
-          await AsyncStorage.setItem("nearestStore", JSON.stringify(mockNearestStore));
-  
-          Alert.alert("Success", "Address saved and nearest store menu fetched successfully", [
-            {
-              text: "OK",
-              onPress: () =>
-                navigation.navigate("StoreType", {
-                  screen: "Menu",
-                  params: { storeData: mockNearestStore, menu },
-                }),
-            },
-          ]);
+
+          console.log("Store Location :", mockNearestStore);
+
+          await AsyncStorage.setItem(
+            "nearestStore",
+            JSON.stringify(mockNearestStore)
+          );
+
+          Alert.alert(
+            "Success",
+            "Address saved and nearest store menu fetched successfully",
+            [
+              {
+                text: "OK",
+                onPress: () =>
+                  navigation.navigate("StoreType", {
+                    screen: "Menu",
+                    params: { storeData: mockNearestStore, menu },
+                  }),
+              },
+            ]
+          );
         } else {
           Alert.alert("Info", "Address saved, but no nearby stores found.");
         }
@@ -167,7 +188,6 @@ export default function LocationScreen({ navigation, route }) {
       Alert.alert("Error", "Could not save address or fetch nearest store.");
     }
   };
-  
 
   const searchLocation = async (query) => {
     if (!query.trim()) {
@@ -306,9 +326,7 @@ export default function LocationScreen({ navigation, route }) {
       >
         {!showSaveForm ? (
           <View>
-            <Text style={styles.addressText}>
-              {addressDetails.address}
-            </Text>
+            <Text style={styles.addressText}>{addressDetails.address}</Text>
             <TouchableOpacity
               style={styles.confirmButton}
               onPress={() => setShowSaveForm(true)}

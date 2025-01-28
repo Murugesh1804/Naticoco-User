@@ -1,50 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, Dimensions, Platform } from 'react-native';
-import { Text, Card, Button, Chip, DataTable, ActivityIndicator } from 'react-native-paper';
-import { LineChart, BarChart, PieChart } from 'react-native-chart-kit';
-import { MotiView } from 'moti';
-import axios from 'axios';
-import { scale, verticalScale, moderateScale } from '../utils/responsive';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  Platform,
+} from "react-native";
+import {
+  Text,
+  Card,
+  Button,
+  Chip,
+  DataTable,
+  ActivityIndicator,
+} from "react-native-paper";
+import { LineChart, BarChart, PieChart } from "react-native-chart-kit";
+import { MotiView } from "moti";
+import axios from "axios";
+import { scale, verticalScale, moderateScale } from "../utils/responsive";
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
 const filterOrdersByTime = (orders, timeFilter) => {
   const now = new Date();
   const filterDate = new Date();
 
   switch (timeFilter) {
-    case 'WEEK':
+    case "WEEK":
       filterDate.setDate(now.getDate() - 7);
       break;
-    case 'MONTH':
+    case "MONTH":
       filterDate.setMonth(now.getMonth() - 1);
       break;
-    case 'YEAR':
+    case "YEAR":
       filterDate.setFullYear(now.getFullYear() - 1);
       break;
     default:
       filterDate.setDate(now.getDate() - 7);
   }
 
-  return orders.filter(order => new Date(order.date) >= filterDate);
+  return orders.filter((order) => new Date(order.date) >= filterDate);
 };
 
 const aggregateOrderData = (orders) => {
   const dailyData = {};
-  
-  orders.forEach(order => {
+
+  orders.forEach((order) => {
     const date = new Date(order.date).toLocaleDateString();
     if (!dailyData[date]) {
       dailyData[date] = {
         revenue: 0,
         orders: 0,
-        avgOrderValue: 0
+        avgOrderValue: 0,
       };
     }
-    
+
     dailyData[date].revenue += order.total;
     dailyData[date].orders += 1;
-    dailyData[date].avgOrderValue = dailyData[date].revenue / dailyData[date].orders;
+    dailyData[date].avgOrderValue =
+      dailyData[date].revenue / dailyData[date].orders;
   });
 
   return Object.values(dailyData);
@@ -52,18 +66,18 @@ const aggregateOrderData = (orders) => {
 
 const calculateStorePerformance = (orders) => {
   const storeStats = {};
-  
-  orders.forEach(order => {
+
+  orders.forEach((order) => {
     if (!storeStats[order.storeId]) {
       storeStats[order.storeId] = {
         id: order.storeId,
-        name: 'Unknown Store',
+        name: "Unknown Store",
         orders: 0,
         revenue: 0,
-        ratings: []
+        ratings: [],
       };
     }
-    
+
     storeStats[order.storeId].orders += 1;
     storeStats[order.storeId].revenue += order.total;
     if (order.rating) {
@@ -73,12 +87,12 @@ const calculateStorePerformance = (orders) => {
 
   // Calculate average ratings and sort by orders
   return Object.values(storeStats)
-    .map(store => ({
-
+    .map((store) => ({
       ...store,
-      rating: store.ratings.length > 0 
-        ? store.ratings.reduce((a, b) => a + b) / store.ratings.length 
-        : 0
+      rating:
+        store.ratings.length > 0
+          ? store.ratings.reduce((a, b) => a + b) / store.ratings.length
+          : 0,
     }))
     .sort((a, b) => b.orders - a.orders);
 };
@@ -88,18 +102,20 @@ const StatCard = ({ title, value, percentageChange, isPositive }) => (
     <MotiView
       from={{ opacity: 0, scale: 0.8 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', delay: 300 }}
+      transition={{ type: "spring", delay: 300 }}
     >
       <Card style={styles.statCard}>
         <Card.Content>
           <Text style={styles.statTitle}>{title}</Text>
           <Text style={styles.statValue}>{value}</Text>
           <View style={styles.percentageContainer}>
-            <Text style={[
-              styles.percentageText,
-              { color: isPositive ? '#4CAF50' : '#F44336' }
-            ]}>
-              {isPositive ? '↑' : '↓'} {Math.abs(percentageChange)}%
+            <Text
+              style={[
+                styles.percentageText,
+                { color: isPositive ? "#4CAF50" : "#F44336" },
+              ]}
+            >
+              {isPositive ? "↑" : "↓"} {Math.abs(percentageChange)}%
             </Text>
             <Text style={styles.periodText}>vs last month</Text>
           </View>
@@ -110,8 +126,8 @@ const StatCard = ({ title, value, percentageChange, isPositive }) => (
 );
 
 export default function OrderAnalytics() {
-  const [timeFilter, setTimeFilter] = useState('WEEK');
-  const [selectedMetric, setSelectedMetric] = useState('ORDERS');
+  const [timeFilter, setTimeFilter] = useState("WEEK");
+  const [selectedMetric, setSelectedMetric] = useState("ORDERS");
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState({
     totalStats: {
@@ -121,11 +137,11 @@ export default function OrderAnalytics() {
       percentageChanges: {
         orders: 0,
         revenue: 0,
-        avgOrderValue: 0
-      }
+        avgOrderValue: 0,
+      },
     },
     dailyData: [],
-    topStores: []
+    topStores: [],
   });
 
   useEffect(() => {
@@ -135,7 +151,9 @@ export default function OrderAnalytics() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://192.168.29.165:3500/api/orders/analytics?timeFilter=${timeFilter}`);
+      const response = await axios.get(
+        `https://nati-coco-server.onrender.com/api/orders/analytics?timeFilter=${timeFilter}`
+      );
       if (response.data) {
         setAnalytics({
           totalStats: response.data.totalStats || {
@@ -145,15 +163,15 @@ export default function OrderAnalytics() {
             percentageChanges: {
               orders: 0,
               revenue: 0,
-              avgOrderValue: 0
-            }
+              avgOrderValue: 0,
+            },
           },
           dailyData: response.data.dailyData || [],
-          topStores: response.data.topStores || []
+          topStores: response.data.topStores || [],
         });
       }
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      console.error("Error fetching analytics:", error);
       // Set default values on error
       setAnalytics({
         totalStats: {
@@ -163,11 +181,11 @@ export default function OrderAnalytics() {
           percentageChanges: {
             orders: 0,
             revenue: 0,
-            avgOrderValue: 0
-          }
+            avgOrderValue: 0,
+          },
         },
         dailyData: [],
-        topStores: []
+        topStores: [],
       });
     } finally {
       setLoading(false);
@@ -176,13 +194,13 @@ export default function OrderAnalytics() {
 
   const renderRevenueChart = () => {
     const chartData = analytics.dailyData.slice(-7);
-    
+
     return (
       <View style={styles.chartCardWrapper}>
         <MotiView
           from={{ opacity: 0, translateY: 50 }}
           animate={{ opacity: 1, translateY: 0 }}
-          transition={{ type: 'timing', duration: 500 }}
+          transition={{ type: "timing", duration: 500 }}
         >
           <Card style={styles.chartCard}>
             <Card.Content>
@@ -192,27 +210,31 @@ export default function OrderAnalytics() {
               ) : (
                 <LineChart
                   data={{
-                    labels: chartData.map((_, index) => 
-                      ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][index]
+                    labels: chartData.map(
+                      (_, index) =>
+                        ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][index]
                     ),
-                    datasets: [{
-                      data: chartData.length > 0 
-                        ? chartData.map(day => Number(day.revenue) || 0)
-                        : [0] // Provide default data if no data available
-                    }]
+                    datasets: [
+                      {
+                        data:
+                          chartData.length > 0
+                            ? chartData.map((day) => Number(day.revenue) || 0)
+                            : [0], // Provide default data if no data available
+                      },
+                    ],
                   }}
                   width={SCREEN_WIDTH - 60}
                   height={220}
                   chartConfig={{
-                    backgroundColor: '#0f1c57',
-                    backgroundGradientFrom: '#0f1c57',
-                    backgroundGradientTo: '#20348f',
+                    backgroundColor: "#0f1c57",
+                    backgroundGradientFrom: "#0f1c57",
+                    backgroundGradientTo: "#20348f",
                     decimalPlaces: 0,
                     color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
                     formatYLabel: (value) => Math.round(value).toString(),
                     style: {
-                      borderRadius: 16
-                    }
+                      borderRadius: 16,
+                    },
                   }}
                   bezier
                   style={styles.chart}
@@ -230,7 +252,7 @@ export default function OrderAnalytics() {
       <MotiView
         from={{ opacity: 0, translateY: 50 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'timing', duration: 500 }}
+        transition={{ type: "timing", duration: 500 }}
       >
         <Card style={styles.tableCard}>
           <Card.Content>
@@ -240,16 +262,26 @@ export default function OrderAnalytics() {
             ) : (
               <DataTable>
                 <DataTable.Header>
-                  <DataTable.Title textColor='#0f1c57'>Store</DataTable.Title>
-                  <DataTable.Title numeric textColor='#0f1c57'>Orders</DataTable.Title>
-                  <DataTable.Title numeric textColor='#0f1c57'>Rating</DataTable.Title>
+                  <DataTable.Title textColor="#0f1c57">Store</DataTable.Title>
+                  <DataTable.Title numeric textColor="#0f1c57">
+                    Orders
+                  </DataTable.Title>
+                  <DataTable.Title numeric textColor="#0f1c57">
+                    Rating
+                  </DataTable.Title>
                 </DataTable.Header>
 
                 {analytics.topStores.map((store) => (
                   <DataTable.Row key={store.id}>
-                    <DataTable.Cell textColor='#0f1c57'>{store.name}</DataTable.Cell>
-                    <DataTable.Cell numeric textColor='#0f1c57'>{store.orders}</DataTable.Cell>
-                    <DataTable.Cell numeric textColor='#0f1c57'>{store.rating.toFixed(1)}</DataTable.Cell>
+                    <DataTable.Cell textColor="#0f1c57">
+                      {store.name}
+                    </DataTable.Cell>
+                    <DataTable.Cell numeric textColor="#0f1c57">
+                      {store.orders}
+                    </DataTable.Cell>
+                    <DataTable.Cell numeric textColor="#0f1c57">
+                      {store.rating.toFixed(1)}
+                    </DataTable.Cell>
                   </DataTable.Row>
                 ))}
               </DataTable>
@@ -265,14 +297,14 @@ export default function OrderAnalytics() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Order Analytics</Text>
         <View style={styles.filterContainer}>
-          {['WEEK', 'MONTH', 'YEAR'].map((filter) => (
+          {["WEEK", "MONTH", "YEAR"].map((filter) => (
             <Chip
               key={filter}
               selected={timeFilter === filter}
               onPress={() => setTimeFilter(filter)}
               style={[
                 styles.filterChip,
-                timeFilter === filter && styles.selectedChip
+                timeFilter === filter && styles.selectedChip,
               ]}
             >
               {filter}
@@ -297,7 +329,9 @@ export default function OrderAnalytics() {
         <StatCard
           title="Avg. Order Value"
           value={`₹${analytics.totalStats.avgOrderValue.toFixed(2)}`}
-          percentageChange={analytics.totalStats.percentageChanges.avgOrderValue}
+          percentageChange={
+            analytics.totalStats.percentageChanges.avgOrderValue
+          }
           isPositive={analytics.totalStats.percentageChanges.avgOrderValue > 0}
         />
       </View>
@@ -311,40 +345,40 @@ export default function OrderAnalytics() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
   },
   header: {
     padding: scale(20),
-    backgroundColor: '#0f1c57',
+    backgroundColor: "#0f1c57",
   },
   headerTitle: {
     fontSize: moderateScale(24),
-    fontWeight: 'bold',
-    color: 'white',
+    fontWeight: "bold",
+    color: "white",
     marginBottom: verticalScale(15),
   },
   filterContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: scale(10),
   },
   filterChip: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: "rgba(255,255,255,0.1)",
   },
   selectedChip: {
-    backgroundColor: '#F8931F',
+    backgroundColor: "#F8931F",
   },
   statsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     padding: scale(15),
     gap: scale(10),
   },
   statCardWrapper: {
     flex: 1,
-    minWidth: '30%',
+    minWidth: "30%",
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.22,
         shadowRadius: 2.22,
       },
@@ -355,36 +389,36 @@ const styles = StyleSheet.create({
   },
   statCard: {
     borderRadius: scale(12),
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   statTitle: {
     fontSize: moderateScale(14),
-    color: '#666',
+    color: "#666",
   },
   statValue: {
     fontSize: moderateScale(20),
-    fontWeight: 'bold',
-    color: '#0f1c57',
+    fontWeight: "bold",
+    color: "#0f1c57",
     marginVertical: verticalScale(5),
   },
   percentageContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: scale(5),
   },
   percentageText: {
     fontSize: moderateScale(14),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   periodText: {
     fontSize: moderateScale(12),
-    color: '#666',
+    color: "#666",
   },
   chartCardWrapper: {
     margin: scale(15),
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.22,
         shadowRadius: 2.22,
       },
@@ -395,12 +429,12 @@ const styles = StyleSheet.create({
   },
   chartCard: {
     borderRadius: scale(12),
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   chartTitle: {
     fontSize: moderateScale(18),
-    fontWeight: 'bold',
-    color: '#0f1c57',
+    fontWeight: "bold",
+    color: "#0f1c57",
     marginBottom: verticalScale(15),
   },
   chart: {
@@ -411,7 +445,7 @@ const styles = StyleSheet.create({
     margin: scale(15),
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.22,
         shadowRadius: 2.22,
       },
@@ -422,12 +456,12 @@ const styles = StyleSheet.create({
   },
   tableCard: {
     borderRadius: scale(12),
-    backgroundColor: 'white',
+    backgroundColor: "white",
   },
   tableTitle: {
     fontSize: moderateScale(18),
-    fontWeight: 'bold',
-    color: '#0f1c57',
+    fontWeight: "bold",
+    color: "#0f1c57",
     marginBottom: verticalScale(15),
   },
 });

@@ -1,40 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
-import { Text, Card, Badge, Button, Dialog, Portal } from 'react-native-paper';
-import { MotiView } from 'moti';
-import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { scale, verticalScale, moderateScale } from '../../utils/responsive';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+} from "react-native";
+import { Text, Card, Badge, Button, Dialog, Portal } from "react-native-paper";
+import { MotiView } from "moti";
+import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { scale, verticalScale, moderateScale } from "../../utils/responsive";
+import axios from "axios";
 
 // Helper function to get status color
 const getStatusColor = (status) => {
   const normalizedStatus = status.toUpperCase();
   switch (normalizedStatus) {
-    case 'PENDING': return '#F8931F';
-    case 'PREPARING': return '#2196F3';
-    case 'READY': return '#FF9800';
-    case 'COMPLETED': return '#4CAF50';
-    case 'REJECTED': return '#F44336';
-    default: return '#666';
+    case "PENDING":
+      return "#F8931F";
+    case "PREPARING":
+      return "#2196F3";
+    case "READY":
+      return "#FF9800";
+    case "COMPLETED":
+      return "#4CAF50";
+    case "REJECTED":
+      return "#F44336";
+    default:
+      return "#666";
   }
 };
 
-const OrderCard = ({ order, onAccept, onReject, onPreparationComplete, onVerifyAndComplete }) => {
+const OrderCard = ({
+  order,
+  onAccept,
+  onReject,
+  onPreparationComplete,
+  onVerifyAndComplete,
+}) => {
   const [otpDialogVisible, setOtpDialogVisible] = useState(false);
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState("");
 
   const handleVerification = () => {
     onVerifyAndComplete(order.orderId, otp);
     setOtpDialogVisible(false);
-    setOtp('');
+    setOtp("");
   };
 
   return (
     <MotiView
       from={{ opacity: 0, translateX: -50 }}
       animate={{ opacity: 1, translateX: 0 }}
-      transition={{ type: 'spring', duration: 1000 }}
+      transition={{ type: "spring", duration: 1000 }}
     >
       <Card style={styles.orderCard}>
         <Card.Content>
@@ -45,7 +64,12 @@ const OrderCard = ({ order, onAccept, onReject, onPreparationComplete, onVerifyA
                 {new Date(order.createdAt).toLocaleTimeString()}
               </Text>
             </View>
-            <Badge style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
+            <Badge
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(order.status) },
+              ]}
+            >
               {order.status}
             </Badge>
           </View>
@@ -63,17 +87,17 @@ const OrderCard = ({ order, onAccept, onReject, onPreparationComplete, onVerifyA
           <View style={styles.orderFooter}>
             <Text style={styles.totalAmount}>Total: ₹{order.amount}</Text>
             <View style={styles.actionButtons}>
-              {order.status.toUpperCase() === 'PENDING' && (
+              {order.status.toUpperCase() === "PENDING" && (
                 <>
-                  <Button 
-                    mode="contained" 
+                  <Button
+                    mode="contained"
                     onPress={() => onAccept(order._id)}
                     style={[styles.actionButton, styles.acceptButton]}
                   >
                     Accept & Prepare
                   </Button>
-                  <Button 
-                    mode="outlined" 
+                  <Button
+                    mode="outlined"
                     onPress={() => onReject(order._id)}
                     style={[styles.actionButton, styles.rejectButton]}
                   >
@@ -81,18 +105,18 @@ const OrderCard = ({ order, onAccept, onReject, onPreparationComplete, onVerifyA
                   </Button>
                 </>
               )}
-              {order.status.toUpperCase() === 'PREPARING' && (
-                <Button 
-                  mode="contained" 
+              {order.status.toUpperCase() === "PREPARING" && (
+                <Button
+                  mode="contained"
                   onPress={() => onPreparationComplete(order._id)}
                   style={[styles.actionButton, styles.completeButton]}
                 >
                   Mark as Ready
                 </Button>
               )}
-              {order.status.toUpperCase() === 'READY' && (
-                <Button 
-                  mode="contained" 
+              {order.status.toUpperCase() === "READY" && (
+                <Button
+                  mode="contained"
                   onPress={() => setOtpDialogVisible(true)}
                   style={[styles.actionButton, styles.verifyButton]}
                 >
@@ -105,7 +129,10 @@ const OrderCard = ({ order, onAccept, onReject, onPreparationComplete, onVerifyA
       </Card>
 
       <Portal>
-        <Dialog visible={otpDialogVisible} onDismiss={() => setOtpDialogVisible(false)}>
+        <Dialog
+          visible={otpDialogVisible}
+          onDismiss={() => setOtpDialogVisible(false)}
+        >
           <Dialog.Title>Enter Delivery OTP</Dialog.Title>
           <Dialog.Content>
             <TextInput
@@ -129,33 +156,37 @@ const OrderCard = ({ order, onAccept, onReject, onPreparationComplete, onVerifyA
 
 export default function OrderManagement({ navigation }) {
   const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('PENDING');
+  const [activeTab, setActiveTab] = useState("PENDING");
   const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
     try {
-      const vendorCredentialsString = await AsyncStorage.getItem('vendorCredentials');
+      const vendorCredentialsString = await AsyncStorage.getItem(
+        "vendorCredentials"
+      );
       if (!vendorCredentialsString) {
-        console.error('No vendor credentials found');
+        console.error("No vendor credentials found");
         return;
       }
-   
+
       const vendorCredentials = JSON.parse(vendorCredentialsString);
       const storeId = vendorCredentials?.vendorData?.storeId;
-  
+
       if (!storeId) {
-        console.error('No storeId found in vendor credentials');
+        console.error("No storeId found in vendor credentials");
         return;
       }
-  
-      const response = await axios.get(`http://192.168.29.165:3500/citystore/orders/${storeId}`);
+
+      const response = await axios.get(
+        `https://nati-coco-server.onrender.com/citystore/orders/${storeId}`
+      );
       setOrders(response.data);
       setLoading(false);
     } catch (error) {
-      console.error('Error details:', {
+      console.error("Error details:", {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
       });
       setLoading(false);
     }
@@ -166,139 +197,178 @@ export default function OrderManagement({ navigation }) {
     const interval = setInterval(fetchOrders, 3000);
     return () => clearInterval(interval);
   }, []);
-  
+
   const handleAcceptOrder = async (orderId) => {
-    console.log('Accepting order:', orderId);
+    console.log("Accepting order:", orderId);
     try {
-      await axios.post('http://192.168.29.165:3500/citystore/updateorder', {
-        orderId: orderId,
-        status: 'PREPARING'
-      });
-      
-      setOrders(orders.map(order =>
-        order._id === orderId ? { ...order, status: 'PREPARING' } : order
-      ));
+      await axios.post(
+        "https://nati-coco-server.onrender.com/citystore/updateorder",
+        {
+          orderId: orderId,
+          status: "PREPARING",
+        }
+      );
+
+      setOrders(
+        orders.map((order) =>
+          order._id === orderId ? { ...order, status: "PREPARING" } : order
+        )
+      );
     } catch (error) {
-      console.error('Error accepting order:', error);
-      Alert.alert('Error', 'Failed to accept order');
+      console.error("Error accepting order:", error);
+      Alert.alert("Error", "Failed to accept order");
     }
   };
-  
+
   const handleRejectOrder = async (orderId) => {
     try {
-      await axios.post('http://192.168.29.165:3500/citystore/updateorder', {
-        orderId: orderId,
-        status: 'REJECTED'
-      });
-  
-      setOrders(orders.map(order =>
-        order._id === orderId ? { ...order, status: 'REJECTED' } : order
-      ));
+      await axios.post(
+        "https://nati-coco-server.onrender.com/citystore/updateorder",
+        {
+          orderId: orderId,
+          status: "REJECTED",
+        }
+      );
+
+      setOrders(
+        orders.map((order) =>
+          order._id === orderId ? { ...order, status: "REJECTED" } : order
+        )
+      );
     } catch (error) {
-      console.error('Error rejecting order:', error);
-      Alert.alert('Error', 'Failed to reject order');
+      console.error("Error rejecting order:", error);
+      Alert.alert("Error", "Failed to reject order");
     }
   };
-  
+
   const handlePreparationComplete = async (orderId) => {
     try {
       // Retrieve vendor credentials from AsyncStorage
-      const vendorCredentialsString = await AsyncStorage.getItem('vendorCredentials');
-  
+      const vendorCredentialsString = await AsyncStorage.getItem(
+        "vendorCredentials"
+      );
+
       // Check if vendor credentials exist
       if (!vendorCredentialsString) {
-        console.error('No vendor credentials found');
-        Alert.alert('Error', 'Vendor credentials are missing');
+        console.error("No vendor credentials found");
+        Alert.alert("Error", "Vendor credentials are missing");
         return;
       }
-  
+
       const vendorCredentials = JSON.parse(vendorCredentialsString);
-      console.log('Vendor credentials:', vendorCredentials);
-  
+      console.log("Vendor credentials:", vendorCredentials);
+
       // Extract store ID
       const storeId = vendorCredentials?.vendorData?.storeId;
       if (!storeId) {
-        console.error('Store ID is missing');
-        Alert.alert('Error', 'Store ID not found');
+        console.error("Store ID is missing");
+        Alert.alert("Error", "Store ID not found");
         return;
       }
-  
+
       // Make API call to mark the order as ready and assign a delivery person
-      const response = await axios.post('http://192.168.29.165:3500/api/orders/markreadyAndAssign', {
-        orderId,
-        storeId,
-      });
-  
-      if (response.data.message === 'Order marked as ready and delivery person assigned') {
+      const response = await axios.post(
+        "https://nati-coco-server.onrender.com/api/orders/markreadyAndAssign",
+        {
+          orderId,
+          storeId,
+        }
+      );
+
+      if (
+        response.data.message ===
+        "Order marked as ready and delivery person assigned"
+      ) {
         // Update the order's status in local state
         setOrders((orders) =>
           orders.map((order) =>
-            order._id === orderId ? { ...order, status: 'READY' } : order
+            order._id === orderId ? { ...order, status: "READY" } : order
           )
         );
-  
-        Alert.alert('Success', `Order marked as ready. OTP: ${response.data.OTP}`);
+
+        Alert.alert("Success", `Order marked as ready.`);
       } else {
-        console.error('API returned an error:', response.data.message);
-        Alert.alert('Error', response.data.message || 'An unexpected error occurred');
+        console.error("API returned an error:", response.data.message);
+        Alert.alert(
+          "Error",
+          response.data.message || "An unexpected error occurred"
+        );
       }
     } catch (error) {
-      console.error('Error marking order as ready:', error);
-  
+      console.error("Error marking order as ready:", error);
+
       // Handle different types of errors
       if (error.response) {
         const { status, data } = error.response;
         Alert.alert(
-          'Error',
-          `Failed to mark order as ready. Status: ${status}, Message: ${data.message || 'Unknown error'}`
+          "Error",
+          `Failed to mark order as ready. Status: ${status}, Message: ${
+            data.message || "Unknown error"
+          }`
         );
       } else if (error.request) {
         // Handle no response from the server
-        console.error('No response received:', error.request);
-        Alert.alert('Error', 'Failed to connect to the server. Please check your network connection.');
+        console.error("No response received:", error.request);
+        Alert.alert(
+          "Error",
+          "Failed to connect to the server. Please check your network connection."
+        );
       } else {
         // Handle unexpected errors
-        Alert.alert('Error', error.message || 'An unexpected error occurred');
+        Alert.alert("Error", error.message || "An unexpected error occurred");
       }
     }
   };
-  
-  
 
   const handleVerifyAndComplete = async (orderId, otp) => {
     try {
-      const response = await axios.post('http://192.168.29.165:3500/api/orders/verifyandcomplete', {
-        orderId: orderId,
-        otp: otp
-      });
+      const response = await axios.post(
+        "https://nati-coco-server.onrender.com/api/orders/verifyandcomplete",
+        {
+          orderId: orderId,
+          otp: otp,
+        }
+      );
 
       if (response.data.success) {
-        setOrders(orders.map(order => 
-          order._id === orderId ? { ...order, status: 'COMPLETED' } : order
-        ));
-        Alert.alert('Success', 'Order completed successfully');
+        setOrders(
+          orders.map((order) =>
+            order._id === orderId ? { ...order, status: "COMPLETED" } : order
+          )
+        );
+        Alert.alert("Success", "Order completed successfully");
       } else {
-        Alert.alert('Error', 'Invalid OTP');
+        Alert.alert("Error", "Invalid OTP");
       }
     } catch (error) {
-      console.error('Error verifying and completing order:', error);
-      Alert.alert('Error', 'Failed to verify and complete order');
+      console.error("Error verifying and completing order:", error);
+      Alert.alert("Error", "Failed to verify and complete order");
     }
   };
 
   // Normalize status for comparison
   const normalizeStatus = (status) => status.toUpperCase();
 
-  const filteredOrders = orders.filter(order => 
-    activeTab === 'ALL' || normalizeStatus(order.status) === activeTab
+  const filteredOrders = orders.filter(
+    (order) =>
+      activeTab === "ALL" || normalizeStatus(order.status) === activeTab
   );
 
   // Status tabs with consistent casing
-  const statusTabs = ['PENDING', 'PREPARING', 'READY', 'COMPLETED', 'REJECTED', 'ALL'];
+  const statusTabs = [
+    "PENDING",
+    "PREPARING",
+    "READY",
+    "COMPLETED",
+    "REJECTED",
+    "ALL",
+  ];
 
   // Helper function to display status in proper case
   const displayStatus = (status) => {
-    return status === 'ALL' ? 'All' : status.charAt(0) + status.slice(1).toLowerCase();
+    return status === "ALL"
+      ? "All"
+      : status.charAt(0) + status.slice(1).toLowerCase();
   };
 
   return (
@@ -311,8 +381,8 @@ export default function OrderManagement({ navigation }) {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
         style={[styles.tabsContainer, { maxHeight: 80 }]}
       >
@@ -322,13 +392,18 @@ export default function OrderManagement({ navigation }) {
             style={[styles.tab, activeTab === tab && styles.activeTab]}
             onPress={() => setActiveTab(tab)}
           >
-            <Text style={[styles.tabText, activeTab === tab && styles.activeTabText]}>
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab && styles.activeTabText,
+              ]}
+            >
               {displayStatus(tab)}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
-        
+
       <ScrollView style={styles.ordersList}>
         {loading ? (
           <Text style={styles.messageText}>Loading orders...</Text>
@@ -336,17 +411,20 @@ export default function OrderManagement({ navigation }) {
           <Text style={styles.messageText}>No orders found</Text>
         ) : (
           filteredOrders.map((order) => (
-           
             <OrderCard
               key={order._id}
               order={{
                 ...order,
-                status: displayStatus(order.status)
+                status: displayStatus(order.status),
               }}
               onAccept={() => handleAcceptOrder(order.orderId)}
               onReject={() => handleRejectOrder(order.orderId)}
-              onPreparationComplete={() => handlePreparationComplete(order.orderId)}
-              onVerifyAndComplete={(orderId, otp) => handleVerifyAndComplete(orderId, otp)}
+              onPreparationComplete={() =>
+                handlePreparationComplete(order.orderId)
+              }
+              onVerifyAndComplete={(orderId, otp) =>
+                handleVerifyAndComplete(orderId, otp)
+              }
             />
           ))
         )}
@@ -359,50 +437,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: scale(20),
   },
   headerTitle: {
     fontSize: moderateScale(20),
-    fontWeight: 'bold',
-    color: '#333',
+    fontWeight: "bold",
+    color: "#333",
   },
   tabsContainer: {
     paddingHorizontal: scale(20),
     marginTop: verticalScale(10),
     // backgroundColor : 'black',
-    height : 0
+    height: 0,
   },
   otpInput: {
     height: 40,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: "#ccc",
     borderRadius: 8,
     paddingHorizontal: 10,
     marginTop: 10,
   },
   verifyButton: {
-    backgroundColor: '#FF9800',
+    backgroundColor: "#FF9800",
   },
   tab: {
     paddingHorizontal: scale(20),
     marginRight: scale(10),
     borderRadius: scale(20),
     height: verticalScale(80),
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   activeTab: {
-    backgroundColor: '#0f1c57',
+    backgroundColor: "#0f1c57",
   },
   tabText: {
-    color: '#666',
-    fontWeight: '500',
+    color: "#666",
+    fontWeight: "500",
   },
   activeTabText: {
-    color: 'white',
+    color: "white",
   },
   ordersList: {
     flex: 1,
@@ -414,18 +492,18 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: verticalScale(10),
   },
   orderId: {
     fontSize: moderateScale(16),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   orderTime: {
     fontSize: moderateScale(14),
-    color: '#666',
+    color: "#666",
   },
   statusBadge: {
     paddingHorizontal: scale(10),
@@ -434,8 +512,8 @@ const styles = StyleSheet.create({
     marginVertical: verticalScale(10),
   },
   itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginBottom: verticalScale(5),
   },
   itemName: {
@@ -443,44 +521,44 @@ const styles = StyleSheet.create({
   },
   itemQuantity: {
     flex: 1,
-    textAlign: 'center',
+    textAlign: "center",
   },
   itemPrice: {
     flex: 1,
-    textAlign: 'right',
+    textAlign: "right",
   },
   orderFooter: {
     marginTop: verticalScale(10),
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
+    borderTopColor: "#f0f0f0",
     paddingTop: verticalScale(10),
   },
   totalAmount: {
     fontSize: moderateScale(16),
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginBottom: verticalScale(10),
   },
   actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
+    flexDirection: "row",
+    justifyContent: "flex-end",
     gap: scale(10),
   },
   actionButton: {
     borderRadius: scale(8),
   },
   acceptButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: "#4CAF50",
   },
   rejectButton: {
-    borderColor: '#F44336',
+    borderColor: "#F44336",
     borderWidth: 1,
   },
-  messageText : {
-   alignSelf : 'center',
-   justifyContent : 'center',
-   top : 50,
+  messageText: {
+    alignSelf: "center",
+    justifyContent: "center",
+    top: 50,
   },
   completeButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: "#2196F3",
   },
 });

@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import TabNavigator from "./Tab";
 import LoginScreen from "./Login";
+import ForgetPass from "./ForgetPass";
 import SignUpScreen from "./CustomerScreens/Screens/SignUp";
 import { SafeAreaView } from "react-native";
 import CartScreen from "./CustomerScreens/Screens/Cart";
@@ -20,7 +21,6 @@ import { Dimensions } from "react-native";
 import { useGlobalAssets } from "./hooks/useGlobalAssets";
 import LoadingScreen from "./CustomerScreens/Components/LoadingScreen";
 import ScreenBackground from "./CustomerScreens/Components/ScreenBackground";
-import DeliveryTab from "./DeliveryScreens/DeliveryTab";
 import StoreStack from "./StoreScreens/StoreStack";
 import Postorder from "./CustomerScreens/Screens/Postorder";
 import CustomerSupportScreen from "./CustomerScreens/Screens/CustomerSupport";
@@ -33,24 +33,34 @@ import UserManagement from "./AdminScreens/ManageUser";
 import OrderAnalytics from "./AdminScreens/OrderAnalytics";
 import DeliveryPartner from "./AdminScreens/DeliveryPartner";
 import AddStore from "./AdminScreens/AddStore";
-
-//Delivery Screens
-import DeliveryHome from "./DeliveryScreens/DeliveryHome";
-import ActiveDeliveries from "./DeliveryScreens/ActiveDeliveries";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useState } from "react";
 
 const Stack = createNativeStackNavigator();
 
 export default function StackNavigator() {
   const isLoadingGlobal = useGlobalAssets();
+  const [login, setLogin] = useState(false);
 
   if (isLoadingGlobal) {
     return <LoadingScreen />;
   }
 
+  const loggedIn = async () => {
+    const user = await AsyncStorage.getItem("logincre");
+    console.log("Details irukka : ", user);
+    if (user == null || user == "false") {
+      setLogin(false);
+    } else {
+      setLogin(true);
+    }
+  };
+  loggedIn();
+
   return (
     <ScreenBackground>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName={login ? "Welcome" : "Login"}
         screenOptions={{
           headerShown: false,
           contentStyle: {
@@ -183,11 +193,6 @@ export default function StackNavigator() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="DeliveryTab"
-          component={DeliveryTab}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
           name="StoreStack"
           component={StoreStack}
           options={{ headerShown: false }}
@@ -200,6 +205,11 @@ export default function StackNavigator() {
         <Stack.Screen
           name="Support"
           component={CustomerSupportScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ForgetPassword"
+          component={ForgetPass}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

@@ -42,8 +42,13 @@ export default function Welcome({ route }) {
   const [name, setName] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace("Location");
+    const timer = setTimeout(async () => {
+      const address = await AsyncStorage.getItem("userLocation");
+      if (address) {
+        navigation.navigate("StoreType");
+      } else {
+        navigation.navigate("Location");
+      }
     }, 3000);
 
     return () => clearTimeout(timer);
