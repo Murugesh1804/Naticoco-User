@@ -35,12 +35,21 @@ const StatCard = ({ title, value, icon, color }) => (
 
 export default function StoreHome({ navigation }) {
   const [isStoreOpen, setIsStoreOpen] = useState(true);
-  const [stats, setStats] = useState({
-    pendingOrders: 5,
-    todayOrders: 25,
-    revenue: "₹12,500",
-    stockAlerts: 3,
-  });
+  const [orders,setOrders] = useState([]);
+  const [loading,setLoading] = useState(false);
+  const [PendingOrder,setPendingOrder] = useState(80);
+  const [todayOrder,setTodayOrder] = useState(25);
+  const [revenue,setRevenue] = useState(0);
+  const [stockAlerts,setStockAlerts] = useState(3);
+  const [stockItems,setStockItems] = useState([]);
+  let sum = 0;
+
+  const stats = {
+    pendingOrders: PendingOrder,
+    todayOrders: todayOrder,
+    revenue: revenue,
+    stockAlerts: stockAlerts,
+  };
   const [vendorDetails, setVendorDetails] = useState(null);
 
   // Fetch vendor details from AsyncStorage
@@ -57,8 +66,96 @@ export default function StoreHome({ navigation }) {
       }
     };
 
+    const fetchMenuItems = async () => {
+     try {
+       const vendorCredentialsString = await AsyncStorage.getItem(
+         "vendorCredentials"
+       );
+       if (!vendorCredentialsString) {
+         Alert.alert("Error", "No vendor credentials found");
+         return;
+       }
+
+       const vendorCredentials = JSON.parse(vendorCredentialsString);
+       const storeId = vendorCredentials?.vendorData?.storeId;
+
+       if (!storeId) {
+         Alert.alert("Error", "No store ID found");
+         return;
+       }
+
+       const response = await axios.get(
+         `https://nati-coco-server.onrender.com/citystore/getallmenu?storeId=${storeId}`
+       );
+       setStockItems(response.data);
+     } catch (error) {
+       console.error("Error fetching menu items:", error);
+       Alert.alert("Error", "Failed to fetch menu items");
+     }
+   };
+
+   fetchMenuItems();
+
     fetchVendorDetails();
   }, []);
+
+  const fetchOrders = async () => {
+   try {
+     const vendorCredentialsString = await AsyncStorage.getItem(
+       "vendorCredentials"
+     );
+     if (!vendorCredentialsString) {
+       console.error("No vendor credentials found");
+       return;
+     }
+
+     const vendorCredentials = JSON.parse(vendorCredentialsString);
+     const storeId = vendorCredentials?.vendorData?.storeId;
+
+     if (!storeId) {
+       console.error("No storeId found in vendor credentials");
+       return;
+     }
+
+     const response = await axios.get(
+       `https://nati-coco-server.onrender.com/citystore/orders/${storeId}`
+     );
+     // console.log(response.data);
+     setOrders(response.data);
+     setLoading(false);
+   } catch (error) {
+     console.error("Error details:", {
+       message: error.message,
+       response: error.response?.data,
+       status: error.response?.status,
+     });
+     setLoading(false);
+   }
+ };
+
+  useEffect(() => {
+   const Statistics = async () => {
+    
+    const dayOrders = orders.filter((order) => order.createdAt.split('T')[0] == "2025-01-28" && order.status == 'COMPLETED')
+    const pending = orders.filter((orderp) => orderp.status == "PENDING");
+    dayOrders.map((order) => sum += order.amount);
+    setRevenue(sum);
+    setPendingOrder(pending.length);
+    setTodayOrder(dayOrders.length);
+    const noStock = stockItems.filter((zero) => zero.availability == false)
+    setStockAlerts(noStock.length);
+
+   }
+ 
+   Statistics();
+  },[stats]);
+
+ useEffect(() => {
+   fetchOrders();
+   const interval = setInterval(fetchOrders, 3000);
+   return () => clearInterval(interval);
+ }, []);
+
 
   const toggleStoreStatus = async () => {
     const newStatus = !isStoreOpen;

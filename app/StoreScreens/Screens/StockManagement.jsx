@@ -75,13 +75,15 @@ const StockItem = ({ item, onDeleteProduct }) => {
     );
   };
 
+  // console.log(item.availability);
+
   return (
     <MotiView
       from={{ opacity: 0, translateY: 20 }}
       animate={{ opacity: 1, translateY: 0 }}
       transition={{ type: "spring", duration: 1000 }}
     >
-      <Card style={styles.stockCard}>
+      <Card style={item.availability ? styles.stockCard : [styles.stockCard,{backgroundColor : '#f94449'}]}>
         <Card.Content>
           <View style={styles.stockHeader}>
             <View style={{ width: SCREEN_WIDTH / 1.8 }}>

@@ -97,6 +97,7 @@ const OrderCard = ({ order }) => {
                 // console.log(item);
                 const reorderItems = JSON.parse(menu).filter((food) => food.itemName == item.name);
                 if (reorderItems) {
+                 // console.log(reorderItems);
                  reorderItems.map((item) => addToCart(item));
                  navigation.navigate('Cart');
                 }else {
