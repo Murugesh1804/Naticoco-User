@@ -28,10 +28,8 @@ import { PixelRatio } from "react-native";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
-// Scale factors based on design width (assuming design was for 375px width)
 const scale = SCREEN_WIDTH / 375;
 
-// Normalize font size for different screen densities
 const normalize = (size) => {
   const newSize = size * scale;
   if (Platform.OS === "ios") {
@@ -96,7 +94,7 @@ export default function LoginScreen() {
     }
     try {
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/auth/login",
+        "http://192.168.29.165:3500/auth/login",
         {
           mobileno: `+91${phoneNumber}`,
           password: password,
@@ -124,7 +122,7 @@ export default function LoginScreen() {
         );
 
         navigation.navigate("Welcome");
-        // Navigation logic
+
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -146,7 +144,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const vendorResponse = await axios.post(
-        "https://nati-coco-server.onrender.com/citystore/Login",
+        "http://192.168.29.165:3500/citystore/Login",
         {
           mobileno: phoneNumber,
           password: password,

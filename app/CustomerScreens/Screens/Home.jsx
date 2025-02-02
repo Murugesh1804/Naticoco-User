@@ -29,6 +29,7 @@ import ProductCard from "./Home/components/ProductCard";
 import { categories, productImages } from "./Home/constants";
 import styles from "./Home/styles";
 import FloatingCartHandler from "../Components/CartHandler";
+import ActiveOrder from "../Components/ActiveOrder";
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -66,7 +67,7 @@ export default function HomeScreen() {
       const authToken = parsedLoginData?.token?.token || token;
 
       const response = await axios.get(
-        "https://nati-coco-server.onrender.com/api/user/nearest",
+        "http://192.168.29.165:3500/api/user/nearest",
         {
           params: { latitude, longitude },
           headers: {
@@ -212,9 +213,11 @@ export default function HomeScreen() {
     return <LoadingScreen />;
   }
 
+
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.container} edges={["right", "left"]}>
+        <ActiveOrder />
         <AnimatedHeader
           address={address}
           cartCount={cartCount}

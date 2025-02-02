@@ -6,7 +6,7 @@ async function getImage(imag) {
   console.log(img);
   try {
     const response = await axios.get(
-      `https://nati-coco-server.onrender.com/images/${img}`,
+      `http://192.168.29.165:3500/images/${img}`,
       {
         responseType: "arraybuffer",
       }

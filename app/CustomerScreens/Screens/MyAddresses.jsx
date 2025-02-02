@@ -90,7 +90,7 @@ export default function MyAddresses() {
       }
 
       const response = await axios.get(
-        `https://nati-coco-server.onrender.com/location/address/${userId}`
+        `http://192.168.29.165:3500/location/address/${userId}`
       );
       if (response.status === 200) {
         setAddresses(response.data.addresses);
@@ -132,7 +132,7 @@ export default function MyAddresses() {
       };
 
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/location/address",
+        "http://192.168.29.165:3500/location/address",
         addressData
       );
 
@@ -174,7 +174,7 @@ export default function MyAddresses() {
       }
       console.log(userId, addressId);
       const response = await axios.delete(
-        `https://nati-coco-server.onrender.com/location/address/${userId}/${addressId}`
+        `http://192.168.29.165:3500/location/address/${userId}/${addressId}`
       );
 
       if (response.status === 200) {

@@ -66,7 +66,7 @@ export default function AddStore({ navigation }) {
 
     try {
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/Admin/addcitystore",
+        "http://192.168.29.165:3500/Admin/addcitystore",
         {
           name: store.Area,
           email: store.email,

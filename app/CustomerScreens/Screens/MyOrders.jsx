@@ -129,7 +129,7 @@ export default function MyOrders() {
         const userId = parsedCredentials?.token?.userId;
         // console.log(userId);
         const response = await axios.get(
-          `https://nati-coco-server.onrender.com/api/orders/myorders/${userId}`
+          `http://192.168.29.165:3500/api/orders/myorders/${userId}`
         );
         setOrders(response.data.orders);
         // console.log(orders[1].items);

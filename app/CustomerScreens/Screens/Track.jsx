@@ -1,405 +1,304 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Dimensions,
-  Linking,
   Alert,
-  FlatList,
-  ActivityIndicator,
   StyleSheet,
-} from "react-native";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
-import MapViewDirections from "react-native-maps-directions";
-import { Ionicons } from "@expo/vector-icons";
-import * as Location from "expo-location";
-import {
-  GestureHandlerRootView,
-  PanGestureHandler,
-} from "react-native-gesture-handler";
+  ActivityIndicator,
+  FlatList,
+} from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import MapViewDirections from 'react-native-maps-directions';
+import { Ionicons } from '@expo/vector-icons';
+import * as Location from 'expo-location';
 import Animated, {
-  useAnimatedGestureHandler,
+ runOnJS,
+ useAnimatedGestureHandler,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  runOnJS,
-} from "react-native-reanimated";
-import { useNavigation } from "@react-navigation/native";
-import BackButton from "../../../app/components/BackButton";
+} from 'react-native-reanimated';
+import { GestureHandlerRootView, PanGestureHandler } from 'react-native-gesture-handler';
+import axios from 'axios';
+
 import { scale, verticalScale, moderateScale } from "../../utils/responsive";
-import axios from "axios";
-import socket from "../../services/socketService";
-import iconSet from "@expo/vector-icons/build/Fontisto";
+import BackButton from '../../components/BackButton';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get("window");
-const GOOGLE_MAPS_KEY = "AIzaSyD9YLhonLv3JjCCVjBv06W1el67IXr19bY";
 
-const ORDER_STATUSES = {
-  PENDING: { color: "#F8931F", icon: "time-outline", text: "Order Received" },
-  ACCEPTED: {
-    color: "#4CAF50",
-    icon: "checkmark-circle-outline",
-    text: "Order Accepted",
-  },
-  PREPARING: {
-    color: "#2196F3",
-    icon: "restaurant-outline",
-    text: "Preparing",
-  },
-  READY: {
-    color: "#9C27B0",
-    icon: "bag-check-outline",
-    text: "Ready for Pickup",
-  },
-  OUT_FOR_DELIVERY: {
-    color: "#FF9800",
-    icon: "bicycle-outline",
-    text: "Out for Delivery",
-  },
-  COMPLETED: {
-    color: "#89C73A",
-    icon: "checkmark-done-circle-outline",
-    text: "Delivered",
-  },
-  CANCELLED: {
-    color: "#F44336",
-    icon: "close-circle-outline",
-    text: "Cancelled",
-  },
-};
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const GOOGLE_MAPS_KEY = 'AIzaSyD9YLhonLv3JjCCVjBv06W1el67IXr19bY';
+const UPDATE_INTERVAL = 5000; // 5 seconds
 
-export default function TrackScreen({ route }) {
-  const navigation = useNavigation();
+const TrackScreen = ({ route, navigation }) => {
   const { orderId } = route.params;
-
-  const [order, setOrder] = useState(null);
-  const [userLocation, setUserLocation] = useState(null);
-  const [storeLocation, setStoreLocation] = useState(null);
-  const [driverLocation, setDriverLocation] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [error, setError] = useState(null);
-
+  const mapRef = useRef(null);
   const translateY = useSharedValue(0);
 
-  const fetchOrderDetails = useCallback(async () => {
+  useEffect(() => {
+   const generateOTP = async () => {
     try {
-      setLoading(true);
+     const response = await axios.post("http://192.168.29.165:3500/api/user/postUserOTP", {
+     orderId : orderId
+    });
+    if (response.status == 200) {
+     console.log(response.data);
+     setOtp(response.data.otp);
+    }
+    }catch (e) {
+     console.error("Error generating OTP",e);
+    } 
+   }
+
+   if (otp == null) {
+    generateOTP();
+   }
+
+  },[otp]);
+  
+  // State management
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [locations, setLocations] = useState({
+    user: null,
+    store: null,
+    driver: null
+  });
+  const [otp, setOtp] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleCancel = async () => {
+   Alert.alert("Cancel Order", "Are you sure you want to cancel the order?", [
+     { text: "No", style: "cancel" },
+     {
+       text: "Yes",
+       onPress: async () => {
+         try {
+           await axios.patch(
+             `http://192.168.29.165:3500/api/orders/${orderId}/cancel`
+           );
+           navigation.navigate("Home");
+         } catch (error) {
+           Alert.alert("Error", "Could not cancel order");
+         }
+       },
+       style: "destructive",
+     },
+   ]);
+ };
+
+
+  // Fetch order details and location updates
+  const fetchOrderData = async () => {
+    try {
       const response = await axios.post(
-        `https://nati-coco-server.onrender.com/user/getorderId`,
+        `http://192.168.29.165:3500/user/getorderId`,
         { orderId }
       );
 
+      if (!response.data || !response.data.order) {
+        throw new Error('Invalid order data received');
+      }
+
       const orderData = response.data.order;
 
-      // Set store location
-      if (orderData.storeLocation) {
-        setStoreLocation({
+      // Update locations
+      setLocations(prev => ({
+        ...prev,
+        store: orderData.storeLocation ? {
           latitude: orderData.storeLocation.latitude,
           longitude: orderData.storeLocation.longitude,
-        });
-      }
-
-      let deliveryPersonData = null;
-      try {
-        // console.log(response.data);
-        if (response.data.deliveryPerson) {
-          deliveryPersonData = response.data.deliveryLocation;
-          console.log(deliveryPersonData);
-          if (orderData.status === "OUT_FOR_DELIVERY") {
-            setDriverLocation({
-              latitude: deliveryPersonData.latitude,
-              longitude: deliveryPersonData.longitude,
-            });
-          }
-        }
-      } catch (delPersonError) {
-        console.log("No delivery person details available");
-      }
-
-      const updatedOrderData = {
-        ...orderData,
-        status: orderData.status || "PREPARING",
-        deliveryPersonId: deliveryPersonData?.id || null,
-        deliveryPersonName: deliveryPersonData?.name || "Unassigned",
-        deliveryPersonPhone: deliveryPersonData?.phone || null,
-        estimatedDeliveryTime:
-          orderData.estimatedDeliveryTime || "Not available",
-      };
-
-      setOrder(updatedOrderData);
-
-      if (
-        !orderData.deliveryLocation ||
-        (orderData.deliveryLocation.latitude === 0 &&
-          orderData.deliveryLocation.longitude === 0)
-      ) {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          let location = await Location.getCurrentPositionAsync({});
-          setUserLocation({
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-          });
-        }
-      } else {
-        setUserLocation(orderData.deliveryLocation);
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching order details:", error);
-      setError("Unable to fetch order details");
-      setLoading(false);
-    }
-  }, [orderId]);
-
-  const setupRealTimeTracking = useCallback(() => {
-    // Only track driver location when order is out for delivery
-    socket.on(`driver_location_${orderId}`, (location) => {
-      if (order?.status === "OUT_FOR_DELIVERY") {
-        setDriverLocation({
-          latitude: location.latitude,
-          longitude: location.longitude,
-        });
-      }
-    });
-
-    socket.on(`order_status_${orderId}`, (status) => {
-      setOrder((prevOrder) => ({
-        ...prevOrder,
-        status: status,
+        } : null,
+        user: orderData.deliveryLocation ? {
+          latitude: orderData.deliveryLocation.latitude,
+          longitude: orderData.deliveryLocation.longitude,
+        } : null
       }));
 
-      // Clear driver location if order is not out for delivery
-      if (status !== "OUT_FOR_DELIVERY") {
-        setDriverLocation(null);
+      // Set OTP if order is ready
+      if (orderData.status === 'READY' && orderData.otp) {
+        setOtp(orderData.otp);
       }
-    });
-  }, [orderId, order?.status]);
 
-  useEffect(() => {
-    fetchOrderDetails();
-    setupRealTimeTracking();
+      setOrder(orderData);
+      setLoading(false);
 
-    return () => {
-      socket.off(`driver_location_${orderId}`);
-      socket.off(`order_status_${orderId}`);
-    };
-  }, [orderId, fetchOrderDetails, setupRealTimeTracking]);
-
-  const gestureHandler = useAnimatedGestureHandler({
-    onStart: (_, ctx) => {
-      ctx.startY = translateY.value;
-    },
-    onActive: (event, ctx) => {
-      const newValue = ctx.startY + event.translationY;
-      translateY.value = Math.min(0, Math.max(newValue, -300));
-    },
-    onEnd: (event) => {
-      if (event.velocityY < -500 || translateY.value < -150) {
-        translateY.value = withSpring(-300);
-        runOnJS(setIsExpanded)(true);
-      } else {
-        translateY.value = withSpring(0);
-        runOnJS(setIsExpanded)(false);
+      // If order is out for delivery, fetch driver location
+      if (orderData.status === 'OUT_FOR_DELIVERY') {
+        fetchDriverLocation(orderId);
       }
-    },
-  });
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
-  const handleCancel = async () => {
-    Alert.alert("Cancel Order", "Are you sure you want to cancel the order?", [
-      { text: "No", style: "cancel" },
-      {
-        text: "Yes",
-        onPress: async () => {
-          try {
-            await axios.patch(
-              `https://nati-coco-server.onrender.com/api/orders/${orderId}/cancel`
-            );
-            navigation.navigate("Home");
-          } catch (error) {
-            Alert.alert("Error", "Could not cancel order");
-          }
-        },
-        style: "destructive",
-      },
-    ]);
-  };
-
-  const handleCall = () => {
-    if (order?.deliveryPersonPhone) {
-      Linking.openURL(`tel:${order.deliveryPersonPhone}`);
-    } else {
-      Alert.alert("No Contact", "Delivery person contact not available.");
+    } catch (err) {
+      console.error('Error fetching order:', err);
+      setError('Failed to fetch order details');
+      setLoading(false);
     }
   };
 
-  const renderOrderTimeline = () => {
-    if (!order) return null;
-
-    return Object.keys(ORDER_STATUSES).map((status) => {
-      const isCurrentStatus = order.status === status;
-      const isPreviousStatus = Object.keys(ORDER_STATUSES)
-        .slice(0, Object.keys(ORDER_STATUSES).indexOf(order.status))
-        .includes(status);
-      const { color, icon } = ORDER_STATUSES[status];
-
-      return (
-        <View key={status} style={styles.timelineItem}>
-          <Ionicons
-            name={
-              isCurrentStatus
-                ? icon
-                : isPreviousStatus
-                ? "checkmark-circle"
-                : icon
-            }
-            size={scale(24)}
-            color={
-              isCurrentStatus ? color : isPreviousStatus ? "#89C73A" : "#DDD"
-            }
-          />
-          <Text
-            style={[
-              styles.timelineText,
-              isCurrentStatus && styles.currentStatusText,
-              isPreviousStatus && styles.completedStatusText,
-            ]}
-          >
-            {status.replace("_", " ")}
-          </Text>
-        </View>
+  const fetchDriverLocation = async (orderId) => {
+    try {
+      const cleanOrderId = orderId.replace('ORD#', '');
+      const response = await axios.get(
+        `http://192.168.29.165:3500/Adminstore/delivery/location/${cleanOrderId}`
       );
-    });
+      // console.log(response.data);
+      if (response.status === 200 && response.data) {
+        setLocations(prev => ({
+          ...prev,
+          driver: {
+            latitude:  13.04411943278981, //response.data.latitude,
+            longitude: 80.23868788554641 // response.data.longitude
+          }
+        }));
+      }
+    } catch (err) {
+      console.error('Error fetching driver location:', err);
+    }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F8931F" />
-        <Text style={styles.loadingText}>Loading Order Details...</Text>
-      </View>
-    );
-  }
+  // Set up polling interval
+  useEffect(() => {
+    fetchOrderData();
+    const interval = setInterval(fetchOrderData, UPDATE_INTERVAL);
 
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Ionicons name="sad-outline" size={64} color="#F44336" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity
-          onPress={fetchOrderDetails}
-          style={styles.retryButton}
-        >
-          <Text style={styles.retryButtonText}>Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+    return () => clearInterval(interval);
+  }, [orderId]);
 
-  if (!order) return null;
-
-  console.log(
-    userLocation,
-    "-----------",
-    driverLocation,
-    "-----------",
-    storeLocation
-  );
+  // Map region calculation
   const getMapRegion = () => {
-    if (!userLocation) return null;
+    const points = Object.values(locations).filter(location => location !== null);
+    
+    if (points.length === 0) return null;
 
-    let points = [userLocation];
-    if (storeLocation) points.push(storeLocation);
-    if (order.status === "OUT_FOR_DELIVERY" && driverLocation)
-      points.push(driverLocation);
-
-    const latitudes = points.map((p) => p.latitude);
-    const longitudes = points.map((p) => p.longitude);
-
-    const minLat = Math.min(...latitudes);
-    const maxLat = Math.max(...latitudes);
-    const minLng = Math.min(...longitudes);
-    const maxLng = Math.max(...longitudes);
+    const latitudes = points.map(p => p.latitude);
+    const longitudes = points.map(p => p.longitude);
 
     return {
-      latitude: (minLat + maxLat) / 2,
-      longitude: (minLng + maxLng) / 2,
-      latitudeDelta: 0.0922,
-      longitudeDelta: 0.0421,
+      latitude: (Math.min(...latitudes) + Math.max(...latitudes)) / 2,
+      longitude: (Math.min(...longitudes) + Math.max(...longitudes)) / 2,
+      latitudeDelta: Math.max(0.04, Math.max(...latitudes) - Math.min(...latitudes) + 0.02),
+      longitudeDelta: Math.max(0.04, Math.max(...longitudes) - Math.min(...longitudes) + 0.02)
     };
   };
+
+  // Animated bottom sheet handlers
+  const gestureHandler = useAnimatedGestureHandler({
+   onStart: (event, ctx) => {
+     ctx.startY = translateY.value;
+   },
+   onActive: (event, ctx) => {
+     const newValue = ctx.startY + event.translationY;
+     translateY.value = Math.min(0, Math.max(newValue, -300));
+   },
+   onEnd: (event) => {
+     if (event.velocityY < -500 || translateY.value < -150) {
+       translateY.value = withSpring(-300);
+       runOnJS(setIsExpanded)(true);
+     } else {
+       translateY.value = withSpring(0);
+       runOnJS(setIsExpanded)(false);
+     }
+   },
+ });
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }]
+  }));
+
+  // Render OTP Banner
+  const renderOtpBanner = async () => {
+    // if (!otp || order?.status === 'COMPLETED') return null;
+
+    return (
+      <View style={styles.otpBanner}>
+        <Text style={styles.otpTitle}>OTP</Text>
+        <Text style={styles.otpValue}>{otp}</Text>
+        <Text style={styles.otpDescription}>Show this OTP to the delivery person</Text>
+      </View>
+    );
+  };
+
+  if (loading || !order) {
+    return (
+      <View style={styles.centerContainer}>
+        <ActivityIndicator size="large" color="#F8931F" />
+      </View>
+    );
+  }
+
+  // console.log(order);
 
   return (
     <GestureHandlerRootView style={styles.container}>
-      <BackButton color="white" />
 
-      {userLocation && (
-        <MapView
-          style={[
-            styles.map,
-            isExpanded && { height: "40%" },
-            StyleSheet.absoluteFill,
-          ]}
-          initialRegion={getMapRegion()}
-        >
-          {/* Delivery Location Marker - Always visible */}
-          <Marker coordinate={userLocation} title="Delivery Location">
-            <View style={styles.marker}>
-              <Ionicons name="location" size={scale(30)} color="white" />
+      <BackButton style={{margin : 20}} />
+      {order.status == 'OUT_FOR_DELIVERY' ? renderOtpBanner() : <></>}
+
+
+      
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={getMapRegion()}
+      >
+
+          <Marker coordinate={locations.driver} title="Driver Location">
+            <View style={[styles.marker, { backgroundColor: '#2196F3' }]}>
+              <Ionicons name="bicycle" size={24} color="white" />
             </View>
           </Marker>
+        {/* User Location Marker */}
+        {locations.user && (
+          <Marker coordinate={locations.user} title="Delivery Location">
+            <View style={[styles.marker, { backgroundColor: '#4CAF50' }]}>
+              <Ionicons name="location" size={24} color="white" />
+            </View>
+          </Marker>
+        )}
 
-          {/* Store Location Marker - Always visible */}
-          {storeLocation && (
-            <Marker coordinate={storeLocation} title="Store Location">
-              <View style={styles.marker}>
-                <Ionicons name="business" size={scale(30)} color="white" />
-              </View>
-            </Marker>
-          )}
+        {/* Store Location Marker */}
+        {locations.store && (
+          <Marker coordinate={locations.store} title="Store Location">
+            <View style={[styles.marker, { backgroundColor: '#F8931F' }]}>
+              <Ionicons name="business" size={24} color="white" />
+            </View>
+          </Marker>
+        )}
 
-          {/* Driver Location Marker - Only visible when OUT_FOR_DELIVERY */}
-          {order.status === "OUT_FOR_DELIVERY" && driverLocation && (
-            <Marker coordinate={driverLocation} title="Driver Location">
-              <View style={styles.marker}>
-                <Ionicons name="bicycle" size={scale(30)} color="white" />
-              </View>
-            </Marker>
-          )}
+        {/* Driver Location Marker */}
+        {locations.driver && order.status === 'OUT_FOR_DELIVERY' && (
+          <Marker coordinate={locations.driver} title="Driver Location">
+            <View style={[styles.marker, { backgroundColor: '#2196F3' }]}>
+              <Ionicons name="bicycle" size={24} color="white" />
+            </View>
+          </Marker>
+        )}
 
-          {/* Route Direction */}
-          {storeLocation &&
-            (order.status === "READY" ? (
-              <MapViewDirections
-                origin={storeLocation}
-                destination={userLocation}
-                apikey={GOOGLE_MAPS_KEY}
-                strokeWidth={2}
-                strokeColor="#000"
-                optimizeWaypoints={true}
-              />
-            ) : (
-              order.status === "OUT_FOR_DELIVERY" &&
-              driverLocation && (
-                <MapViewDirections
-                  origin={driverLocation}
-                  destination={userLocation}
-                  apikey={GOOGLE_MAPS_KEY}
-                  strokeWidth={5}
-                  strokeColor="#F8931F"
-                  optimizeWaypoints={true}
-                />
-              )
-            ))}
-        </MapView>
-      )}
+        {locations.driver && locations.user && order.status === 'READY' && (
+          <MapViewDirections
+            origin={locations.driver}
+            destination={locations.store}
+            apikey={GOOGLE_MAPS_KEY}
+            strokeWidth={3}
+            strokeColor="#F8931F"
+            optimizeWaypoints={true}
+          />
+        )}
+
+        {/* Route Directions */}
+        
+        {locations.driver && locations.user && order.status === 'OUT_FOR_DELIVERY' && (
+          <MapViewDirections
+            origin={locations.driver}
+            destination={locations.user}
+            apikey={GOOGLE_MAPS_KEY}
+            strokeWidth={3}
+            strokeColor="#F8931F"
+            optimizeWaypoints={true}
+          />
+        )}
+      </MapView>
 
       <PanGestureHandler onGestureEvent={gestureHandler}>
         <Animated.View style={[styles.deliveryCard, animatedStyle]}>
@@ -407,19 +306,19 @@ export default function TrackScreen({ route }) {
 
           <View style={styles.statusContainer}>
             <Text style={styles.statusText}>
-              {order.status.replace("_", " ")}
+              {order.status}
             </Text>
             <Text style={styles.timeText}>
-              Estimated Delivery: {order.estimatedDeliveryTime}
+              Estimated Delivery: {'5 Mins'}
             </Text>
           </View>
 
-          {order.status === "OUT_FOR_DELIVERY" && order.deliveryPersonId ? (
+          {order.status != "OUT_FOR_DELIVERY" && order.deliveryPersonId ? (
             <View style={styles.driverInfo}>
               <View style={styles.driverDetails}>
                 <Ionicons
                   name="person-circle-outline"
-                  size={scale(40)}
+                  size={40}
                   color="#666"
                 />
                 <View style={styles.driverTextContainer}>
@@ -431,7 +330,7 @@ export default function TrackScreen({ route }) {
               </View>
 
               <TouchableOpacity onPress={handleCall} style={styles.callButton}>
-                <Ionicons name="call" size={scale(24)} color="white" />
+                <Ionicons name="call" size={24} color="white" />
               </TouchableOpacity>
             </View>
           ) : (
@@ -444,7 +343,7 @@ export default function TrackScreen({ route }) {
             </View>
           )}
 
-          <View style={styles.timeline}>{renderOrderTimeline()}</View>
+          {/* <View style={styles.timeline}>{renderOrderTimeline()}</View> */}
 
           {isExpanded && (
             <View style={styles.expandedContent}>
@@ -486,187 +385,324 @@ export default function TrackScreen({ route }) {
       </PanGestureHandler>
     </GestureHandlerRootView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  actionButtons: {
-    flexDirection: "row",
-    justifyContent: "space-evenly",
-    alignItems: "center",
-    marginTop: 20,
-  },
   container: {
     flex: 1,
-    backgroundColor: "white",
   },
-  button: {
-    backgroundColor: "#89C73A",
-    padding: scale(15),
-    borderRadius: scale(10),
-    width: "40%",
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "600",
-    fontSize: moderateScale(16),
+  centerContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   map: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT * 0.8,
+    flex: 1,
+    
   },
-  driverMarker: {
-    backgroundColor: "#F8931F",
-    padding: scale(8),
-    borderRadius: scale(20),
-    borderWidth: scale(2),
-    borderColor: "white",
-  },
-  deliveryCard: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    backgroundColor: "white",
-    borderTopLeftRadius: scale(20),
-    borderTopRightRadius: scale(20),
-    padding: scale(20),
-    paddingTop: scale(10),
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+  otpBanner: {
+    position: 'absolute',
+    top: 40,
+    // left: 20,
+    right: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    zIndex: 100,
+    alignItems: 'center',
     elevation: 5,
-    maxHeight: "70%",
+    width : SCREEN_WIDTH / 2,
   },
-  statusContainer: {
-    marginBottom: verticalScale(20),
+  otpTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#F8931F',
+  },
+  otpValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginVertical: 5,
+  },
+  otpDescription: {
+    fontSize: 12,
+    color: '#666',
   },
   marker: {
-    backgroundColor: "#F8931F",
-    padding: 6,
+    padding: 8,
     borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  bottomSheet: {
+    position: 'absolute',
+    bottom: 45,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    elevation: 5,
+  },
+  bottomSheetHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#DDD',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  orderStatus: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  deliveryTime: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
+  },
+  driverInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#EEE',
+    paddingTop: 20,
+  },
+  driverDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  driverName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  driverPhone: {
+    fontSize: 14,
+    color: '#666',
+  },
+  callButton: {
+    backgroundColor: '#89C73A',
+    padding: 12,
+    borderRadius: 25,
   },
   statusText: {
-    fontSize: moderateScale(20),
+    fontSize: 20,
     fontWeight: "bold",
     color: "#F8931F",
   },
   timeText: {
-    fontSize: moderateScale(16),
+    fontSize: 16,
     color: "#666",
-    marginTop: verticalScale(4),
+    marginTop: 4
   },
-  driverInfo: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: verticalScale(20),
-  },
-  driverDetails: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  driverTextContainer: {
-    marginLeft: scale(12),
-  },
-  driverName: {
-    fontSize: moderateScale(18),
-    fontWeight: "600",
-  },
-  driverRole: {
-    fontSize: moderateScale(14),
-    color: "#666",
-  },
-  callButton: {
-    backgroundColor: "#89C73A",
-    padding: scale(12),
-    borderRadius: scale(25),
-  },
-  timeline: {
-    borderTopWidth: scale(1),
-    borderTopColor: "#eee",
-    paddingTop: verticalScale(20),
-  },
-  timelineItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: verticalScale(12),
-  },
-  timelineText: {
-    marginLeft: scale(12),
-    fontSize: moderateScale(16),
-    color: "#333",
-  },
-  pullBar: {
-    width: scale(40),
-    height: verticalScale(4),
-    backgroundColor: "#DDD",
-    borderRadius: scale(2),
-    alignSelf: "center",
-    marginBottom: verticalScale(20),
-  },
-  expandedContent: {
-    marginTop: verticalScale(20),
-    borderTopWidth: scale(1),
-    borderBottomWidth: scale(1),
-    borderTopColor: "#eee",
-    borderBottomColor: "#eee",
-    paddingTop: verticalScale(20),
-    paddingBottom: verticalScale(20),
-  },
-  sectionTitle: {
-    fontSize: moderateScale(18),
-    fontWeight: "600",
-    marginBottom: verticalScale(15),
-  },
-  orderDetails: {
-    gap: scale(12),
-  },
-  detailItem: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  cart: {
-    justifyContent: "space-between",
-    alignItems: "start",
-    flexWrap: "wrap",
-    gap: scale(10),
-  },
-  retryButtonText: {
-    backgroundColor: "red",
-    padding: 10,
-    borderRadius: 10,
-    margin: 10,
-    color: "white",
-  },
-  cancel: {
-    backgroundColor: "#de0303",
-    padding: scale(15),
-    borderRadius: scale(10),
-    alignItems: "center",
-    justifyContent: "center",
-    width: "40%",
-  },
-  errorContainer: {
-    top: SCREEN_HEIGHT / 2.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  detailLabel: {
-    fontSize: moderateScale(14),
-    color: "#666",
-  },
-  detailValue: {
-    fontSize: moderateScale(14),
-    fontWeight: "600",
-  },
-  detailValueItem: {
-    fontSize: moderateScale(14),
-    fontWeight: "600",
-    padding: scale(5),
-    borderRadius: scale(5),
-  },
+  deliveryCard: {
+   position: "absolute",
+   bottom: 0,
+   width: "100%",
+   backgroundColor: "white",
+   borderTopLeftRadius: scale(20),
+   borderTopRightRadius: scale(20),
+   padding: scale(0),
+   paddingTop: scale(10),
+   shadowColor: "#000",
+   shadowOffset: {
+     width: 0,
+     height: -2,
+   },
+   shadowOpacity: 0.1,
+   shadowRadius: 4,
+   elevation: 5,
+   height : 200
+ },
+ statusContainer: {
+  marginBottom: verticalScale(20),
+  paddingHorizontal : 20,
+},
+marker: {
+  backgroundColor: "#F8931F",
+  padding: 6,
+  borderRadius: 20,
+},
+statusText: {
+  fontSize: moderateScale(20),
+  fontWeight: "bold",
+  color: "#F8931F",
+  // paddingHorizontal : 10,
+},
+timeText: {
+  fontSize: moderateScale(16),
+  color: "#666",
+  marginTop: verticalScale(4),
+},
+driverInfo: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: verticalScale(20),
+  paddingHorizontal : 20,
+},
+driverDetails: {
+  flexDirection: "row",
+  alignItems: "center",
+},
+driverTextContainer: {
+  marginLeft: scale(12),
+},
+driverName: {
+  fontSize: moderateScale(18),
+  fontWeight: "600",
+},
+driverRole: {
+  fontSize: moderateScale(14),
+  color: "#666",
+},
+callButton: {
+  backgroundColor: "#89C73A",
+  padding: scale(12),
+  borderRadius: scale(25),
+},
+timeline: {
+  borderTopWidth: scale(1),
+  borderTopColor: "#eee",
+  paddingTop: verticalScale(20),
+},
+timelineItem: {
+  flexDirection: "row",
+  alignItems: "center",
+  marginBottom: verticalScale(12),
+ 
+},
+timelineText: {
+  marginLeft: scale(12),
+  fontSize: moderateScale(16),
+  color: "#333",
+},
+pullBar: {
+  width: scale(40),
+  height: verticalScale(4),
+  backgroundColor: "#DDD",
+  borderRadius: scale(2),
+  alignSelf: "center",
+  marginBottom: verticalScale(20),
+},
+expandedContent: {
+  marginTop: verticalScale(10),
+  borderTopWidth: scale(1),
+  borderBottomWidth: scale(1),
+  borderTopColor: "#eee",
+  borderBottomColor: "#eee",
+  paddingTop: verticalScale(20),
+  paddingBottom: verticalScale(10),
+  backgroundColor : 'white',
+  paddingHorizontal : 20
+},
+sectionTitle: {
+  fontSize: moderateScale(18),
+  fontWeight: "600",
+  marginBottom: verticalScale(15),
+},
+orderDetails: {
+  gap: scale(12),
+},
+detailItem: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+},
+cart: {
+  justifyContent: "space-between",
+  alignItems: "start",
+  flexWrap: "wrap",
+  gap: scale(10),
+},
+retryButtonText: {
+  backgroundColor: "red",
+  padding: 10,
+  borderRadius: 10,
+  margin: 10,
+  color: "white",
+},
+cancel: {
+  backgroundColor: "#de0303",
+  padding: scale(15),
+  borderRadius: scale(10),
+  alignItems: "center",
+  justifyContent: "center",
+  width: "40%",
+},
+errorContainer: {
+  top: SCREEN_HEIGHT / 2.5,
+  alignItems: "center",
+  justifyContent: "center",
+},
+detailLabel: {
+  fontSize: moderateScale(14),
+  color: "#666",
+},
+detailValue: {
+  fontSize: moderateScale(14),
+  fontWeight: "600",
+},
+detailValueItem: {
+  fontSize: moderateScale(14),
+  fontWeight: "600",
+  padding: scale(5),
+  borderRadius: scale(5),
+},
+actionButtons: {
+ flexDirection: "row",
+ justifyContent: "space-evenly",
+ alignItems: "center",
+ marginTop: 20,
+},
+container: {
+ flex: 1,
+ backgroundColor: "white",
+},
+button: {
+ backgroundColor: "#89C73A",
+ padding: scale(15),
+ borderRadius: scale(10),
+ width: "40%",
+},
+buttonText: {
+ color: "white",
+ fontWeight: "600",
+ fontSize: moderateScale(16),
+},
+map: {
+ width: SCREEN_WIDTH,
+ height: SCREEN_HEIGHT * 0.8,
+},
+driverMarker: {
+ backgroundColor: "#F8931F",
+ padding: scale(8),
+ borderRadius: scale(20),
+ borderWidth: scale(2),
+ borderColor: "white",
+},
 });
+
+
+// const getETAFromGoogle = async (loc1,loc2) => {
+//  const lat1 = loc1.latitude;
+//  const lon1 = loc1.longitude;
+//  const lat2 = loc2.latitude;
+//  const lon2 = loc2.longitude;
+
+//  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${lat1},${lon1}&destination=${lat2},${lon2}&key=${GOOGLE_MAPS_KEY}`;
+
+//  try {
+//    const response = await axios.get(url);
+//    const duration = response.data.routes[0].legs[0].duration.text;
+//    return duration;
+//  } catch (error) {
+//    console.error("Error fetching ETA:", error);
+//    return "Unavailable";
+//  }
+// };
+
+export default TrackScreen;

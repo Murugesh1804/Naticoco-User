@@ -10,7 +10,7 @@ import {
   Alert,
   Platform,
 } from "react-native";
-import { Text, Card, TextInput, Button, IconButton } from "react-native-paper";
+import { Text, Card, TextInput, Button, IconButton,HelperText,List } from "react-native-paper";
 import { MotiView } from "moti";
 import { Ionicons } from "@expo/vector-icons";
 import { scale, verticalScale, moderateScale } from "../../utils/responsive";
@@ -18,6 +18,8 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SCREEN_WIDTH } from "../../CustomerScreens/Screens/Home/constants";
+import DropDown from 'react-native-paper-dropdown';
+
 
 const StockItem = ({ item, onDeleteProduct }) => {
   const [isEditing, setIsEditing] = useState(false);
@@ -32,7 +34,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
     try {
       setIsSaving(true);
       await axios.put(
-        `https://nati-coco-server.onrender.com/citystore/Updatemenu/${item._id}`,
+        `http://192.168.29.165:3500/citystore/Updatemenu/${item._id}`,
         {
           // stock: parseInt(stockValue), // Convert to integer
           price: parseFloat(priceValue), // Convert to float
@@ -63,7 +65,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
           onPress: async () => {
             try {
               await axios.delete(
-                `https://nati-coco-server.onrender.com/citystore/Deletemenu/${item._id}`
+                `http://192.168.29.165:3500/citystore/Deletemenu/${item._id}`
               );
             } catch (error) {
               console.error("Error deleting item:", error);
@@ -164,6 +166,8 @@ export default function StockManagement({ navigation }) {
   const [stockItems, setStockItems] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [activeCategory, setActiveCategory] = useState("ALL");
+  const [showCategoryDropDown, setShowCategoryDropDown] = useState(false);
+  const [showSubCategoryDropDown, setShowSubCategoryDropDown] = useState(false);
   const categories = [
     "ALL",
     ...new Set(stockItems.map((item) => item.category)),
@@ -189,7 +193,7 @@ export default function StockManagement({ navigation }) {
         }
 
         const response = await axios.get(
-          `https://nati-coco-server.onrender.com/citystore/getallmenu?storeId=${storeId}`
+          `http://192.168.29.165:3500/citystore/getallmenu?storeId=${storeId}`
         );
         setStockItems(response.data);
       } catch (error) {
@@ -305,7 +309,7 @@ export default function StockManagement({ navigation }) {
         });
       }
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/citystore/Addmenu",
+        "http://192.168.29.165:3500/citystore/Addmenu",
         formData,
         {
           headers: {
@@ -331,7 +335,7 @@ export default function StockManagement({ navigation }) {
           newArrival: false,
         });
         const menuResponse = await axios.get(
-          `https://nati-coco-server.onrender.com/citystore/getallmenu?storeId=${storeId}`
+          `http://192.168.29.165:3500/citystore/getallmenu?storeId=${storeId}`
         );
         setStockItems(menuResponse.data);
       }
@@ -343,6 +347,44 @@ export default function StockManagement({ navigation }) {
       );
     }
   };
+
+  const foodCategories = [
+   { label: 'Electronics', value: 'electronics' },
+   { label: 'Clothing', value: 'clothing' },
+   { label: 'Books', value: 'books' },
+ ];
+
+ const subCategoriesMap = {
+   electronics: [
+     { label: 'Phones', value: 'phones' },
+     { label: 'Laptops', value: 'laptops' },
+     { label: 'Tablets', value: 'tablets' },
+   ],
+   clothing: [
+     { label: 'Shirts', value: 'shirts' },
+     { label: 'Pants', value: 'pants' },
+     { label: 'Shoes', value: 'shoes' },
+   ],
+   books: [
+     { label: 'Fiction', value: 'fiction' },
+     { label: 'Non-Fiction', value: 'non-fiction' },
+     { label: 'Academic', value: 'academic' },
+   ],
+ };
+
+ useEffect(() => {
+  setSubCategory('');
+}, [newItem.category]);
+
+// const handleCategoryChange = (value) => {
+//   setCategory(value);
+//   setNewItem(prev => ({ ...prev, category: value }));
+// };
+
+// const handleSubCategoryChange = (value) => {
+//   setSubCategory(value);
+//   setNewItem(prev => ({ ...prev, subCategory: value }));
+// };
 
   return (
     <View style={styles.container}>
@@ -427,7 +469,7 @@ export default function StockManagement({ navigation }) {
               mode="outlined"
             />
 
-            <TextInput
+            {/* <TextInput
               label="Category *"
               value={newItem.category}
               onChangeText={(text) =>
@@ -445,7 +487,38 @@ export default function StockManagement({ navigation }) {
               }
               style={styles.modalInput}
               mode="outlined"
-            />
+            /> */}
+
+             <DropDown
+              label="Category *"
+              mode="outlined"
+              visible={showCategoryDropDown}
+              showDropDown={() => setShowCategoryDropDown(true)}
+              onDismiss={() => setShowCategoryDropDown(false)}
+              value={newItem.category}
+              setValue={(text) =>
+               setNewItem((prev) => ({ ...prev, category: text }))}
+              list={foodCategories}
+             />
+            
+             {newItem.category && (
+              <DropDown
+                label="Sub Category"
+                mode="outlined"
+                visible={showSubCategoryDropDown}
+                showDropDown={() => setShowSubCategoryDropDown(true)}
+                onDismiss={() => setShowSubCategoryDropDown(false)}
+                value={newItem.subCategory}
+                setValue={(text) =>
+                 setNewItem((prev) => ({ ...prev, subCategory: text }))}
+                list={subCategoriesMap[newItem.category] || []}
+                style={{ marginTop: 10 }}
+              />
+            )}
+
+            <HelperText type="error" visible={!newItem.category}>
+              Category is required
+            </HelperText>
 
             <TextInput
               label="Description"

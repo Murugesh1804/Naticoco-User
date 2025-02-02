@@ -33,7 +33,7 @@ export default ForgetPass = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/auth/reset-password",
+        "http://192.168.29.165:3500/auth/reset-password",
         { email }
       );
 
@@ -61,7 +61,7 @@ export default ForgetPass = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/auth/verify-otp",
+        "http://192.168.29.165:3500/auth/verify-otp",
         { email, otp }
       );
 
@@ -98,7 +98,7 @@ export default ForgetPass = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/user/reset-password",
+        "http://192.168.29.165:3500/user/reset-password",
         { email, otp, newPassword }
       );
 

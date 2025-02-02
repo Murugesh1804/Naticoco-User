@@ -104,7 +104,7 @@ function CartScreen({ navigation }) {
     try {
       // Create order on your backend
       const orderResponse = await axios.post(
-        "https://nati-coco-server.onrender.com/payment/orders",
+        "http://192.168.29.165:3500/payment/orders",
         {
           amount: totalAmount * 100,
         }
@@ -157,7 +157,7 @@ function CartScreen({ navigation }) {
 
       // Verify payment on backend
       const verificationResponse = await axios.post(
-        "https://nati-coco-server.onrender.com/payment/verify",
+        "http://192.168.29.165:3500/payment/verify",
         {
           razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,
@@ -259,7 +259,7 @@ function CartScreen({ navigation }) {
       console.log("Calling API with data:", orderData);
 
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/user/placeorder",
+        "http://192.168.29.165:3500/user/placeorder",
         orderData
       );
 
@@ -816,7 +816,7 @@ export default CartScreen;
 //   //   try {
 //   //     // Create order on your backend
 //   //     const orderResponse = await axios.post(
-//   //       "https://nati-coco-server.onrender.com/payment/orders",
+//   //       "http://192.168.29.165:3500/payment/orders",
 //   //       {
 //   //         amount: totalAmount * 100,
 //   //       }
@@ -866,7 +866,7 @@ export default CartScreen;
 //   //     }
 
 //   //     // Verify payment on your backend
-//   //     await axios.post("https://nati-coco-server.onrender.com/payment/verify", {
+//   //     await axios.post("http://192.168.29.165:3500/payment/verify", {
 //   //       razorpay_order_id: response.razorpay_order_id,
 //   //       razorpay_payment_id: response.razorpay_payment_id,
 //   //       razorpay_signature: response.razorpay_signature,

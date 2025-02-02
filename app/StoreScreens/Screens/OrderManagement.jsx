@@ -178,7 +178,7 @@ export default function OrderManagement({ navigation }) {
       }
 
       const response = await axios.get(
-        `https://nati-coco-server.onrender.com/citystore/orders/${storeId}`
+        `http://192.168.29.165:3500/citystore/orders/${storeId}`
       );
       setOrders(response.data);
       setLoading(false);
@@ -202,7 +202,7 @@ export default function OrderManagement({ navigation }) {
     console.log("Accepting order:", orderId);
     try {
       await axios.post(
-        "https://nati-coco-server.onrender.com/citystore/updateorder",
+        "http://192.168.29.165:3500/citystore/updateorder",
         {
           orderId: orderId,
           status: "PREPARING",
@@ -223,7 +223,7 @@ export default function OrderManagement({ navigation }) {
   const handleRejectOrder = async (orderId) => {
     try {
       await axios.post(
-        "https://nati-coco-server.onrender.com/citystore/updateorder",
+        "http://192.168.29.165:3500/citystore/updateorder",
         {
           orderId: orderId,
           status: "REJECTED",
@@ -268,7 +268,7 @@ export default function OrderManagement({ navigation }) {
 
       // Make API call to mark the order as ready and assign a delivery person
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/api/orders/markreadyAndAssign",
+        "http://192.168.29.165:3500/api/orders/markreadyAndAssign",
         {
           orderId,
           storeId,
@@ -323,7 +323,7 @@ export default function OrderManagement({ navigation }) {
   const handleVerifyAndComplete = async (orderId, otp) => {
     try {
       const response = await axios.post(
-        "https://nati-coco-server.onrender.com/api/orders/verifyandcomplete",
+        "http://192.168.29.165:3500/api/orders/verifyandcomplete",
         {
           orderId: orderId,
           otp: otp,

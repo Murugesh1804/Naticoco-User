@@ -127,14 +127,14 @@ export default function LocationScreen({ navigation, route }) {
 
       // Save the address to the server
       const saveResponse = await axios.post(
-        "https://nati-coco-server.onrender.com/location/address",
+        "http://192.168.29.165:3500/location/address",
         addressData
       );
 
       if (saveResponse.status === 201) {
         // Find the nearest store and fetch its menu
         const nearestStoreResponse = await axios.get(
-          "https://nati-coco-server.onrender.com/userapi/nearest",
+          "http://192.168.29.165:3500/userapi/nearest",
           {
             params: {
               latitude: location.latitude,

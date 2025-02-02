@@ -227,7 +227,7 @@ export default function DeliveryPartner() {
     const fetchDeliveryPartners = async () => {
       try {
         const response = await axios.get(
-          "https://nati-coco-server.onrender.com/Adminstore/delivery/getDeliveryPerson"
+          "http://192.168.29.165:3500/Adminstore/delivery/getDeliveryPerson"
         );
         if (response.data.deliveryPersons) {
           // Transform the data to match our component's structure
@@ -263,7 +263,7 @@ export default function DeliveryPartner() {
   const handleApprove = async (id) => {
     try {
       await axios.post(
-        `https://nati-coco-server.onrender.com/Adminstore/delivery/updateStatus/${id}`,
+        `http://192.168.29.165:3500/Adminstore/delivery/updateStatus/${id}`,
         {
           status: "ACTIVE",
         }
@@ -283,7 +283,7 @@ export default function DeliveryPartner() {
   const handleReject = async (id) => {
     try {
       await axios.post(
-        `https://nati-coco-server.onrender.com/Adminstore/delivery/updateStatus/${id}`,
+        `http://192.168.29.165:3500/Adminstore/delivery/updateStatus/${id}`,
         {
           status: "REJECTED",
         }
@@ -303,7 +303,7 @@ export default function DeliveryPartner() {
   const handleSuspend = async (id) => {
     try {
       await axios.post(
-        `https://nati-coco-server.onrender.com/Adminstore/delivery/updateStatus/${id}`,
+        `http://192.168.29.165:3500/Adminstore/delivery/updateStatus/${id}`,
         {
           status: "SUSPENDED",
         }

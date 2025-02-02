@@ -176,7 +176,7 @@ export default function CrispyHome() {
       const authToken = parsedLoginData?.token?.token || token;
 
       const response = await axios.get(
-        "https://nati-coco-server.onrender.com/api/user/nearest",
+        "http://192.168.29.165:3500/api/user/nearest",
         {
           params: { latitude, longitude },
           headers: {

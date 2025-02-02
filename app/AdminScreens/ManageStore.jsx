@@ -159,7 +159,7 @@ const ManageStore = () => {
       setError(null);
 
       const response = await axios.get(
-        "https://nati-coco-server.onrender.com/Admin/cityowners"
+        "http://192.168.29.165:3500/Admin/cityowners"
       );
       console.log("API Response:", response.data);
 
