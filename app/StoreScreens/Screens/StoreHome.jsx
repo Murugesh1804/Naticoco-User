@@ -85,7 +85,7 @@ export default function StoreHome({ navigation }) {
        }
 
        const response = await axios.get(
-         `http://192.168.29.165:3500/citystore/getallmenu?storeId=${storeId}`
+         `http://147.93.110.87:3500/citystore/getallmenu?storeId=${storeId}`
        );
        setStockItems(response.data);
      } catch (error) {
@@ -118,7 +118,7 @@ export default function StoreHome({ navigation }) {
      }
 
      const response = await axios.get(
-       `http://192.168.29.165:3500/citystore/orders/${storeId}`
+       `http://147.93.110.87:3500/citystore/orders/${storeId}`
      );
      // console.log(response.data);
      setOrders(response.data);
@@ -177,7 +177,7 @@ export default function StoreHome({ navigation }) {
       }
 
       const response = await axios.put(
-        "http://192.168.29.165:3500/citystore/availability",
+        "http://147.93.110.87:3500/citystore/availability",
         {
           storeId,
           isOpen: newStatus,

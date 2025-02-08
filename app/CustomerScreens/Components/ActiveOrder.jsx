@@ -27,7 +27,7 @@ const ActiveOrder = () => {
           const parsedCredentials = credentials ? JSON.parse(credentials) : null;
           const userId = parsedCredentials?.token?.userId;
           
-          const response = await axios.get(`http://192.168.29.165:3500/api/orders/myorders/${userId}`);
+          const response = await axios.get(`http://147.93.110.87:3500/api/orders/myorders/${userId}`);
           setOrders(response.data.orders);
           
           const active = response.data.orders.find(order => 
@@ -70,7 +70,7 @@ const ActiveOrder = () => {
 //         const parsedCredentials = credentials ? JSON.parse(credentials) : null;
 //         const userId = parsedCredentials?.token?.userId;
         
-//         const response = await axios.get(`http://192.168.29.165:3500/api/orders/myorders/${userId}`);
+//         const response = await axios.get(`http://147.93.110.87:3500/api/orders/myorders/${userId}`);
 //         setOrders(response.data.orders);
         
 //         const active = response.data.orders.find(order => 

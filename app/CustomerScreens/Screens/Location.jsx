@@ -127,20 +127,15 @@ export default function LocationScreen({ navigation, route }) {
 
       // Save the address to the server
       const saveResponse = await axios.post(
-        "http://192.168.29.165:3500/location/address",
+        "http://147.93.110.87:3500/location/address",
         addressData
       );
 
       if (saveResponse.status === 201) {
         // Find the nearest store and fetch its menu
+        console.log(location);
         const nearestStoreResponse = await axios.get(
-          "http://192.168.29.165:3500/userapi/nearest",
-          {
-            params: {
-              latitude: location.latitude,
-              longitude: location.longitude,
-            },
-          }
+          `http://147.93.110.87:3500/userapi/nearest?latitude=${location.latitude}&longitude=${location.longitude}`
         );
         console.log("Response", nearestStoreResponse.status);
         if (nearestStoreResponse.status === 200) {

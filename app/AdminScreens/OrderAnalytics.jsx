@@ -152,7 +152,7 @@ export default function OrderAnalytics() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://192.168.29.165:3500/api/orders/analytics?timeFilter=${timeFilter}`
+        `http://147.93.110.87:3500/api/orders/analytics?timeFilter=${timeFilter}`
       );
       if (response.data) {
         setAnalytics({

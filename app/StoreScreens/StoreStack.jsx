@@ -3,6 +3,7 @@ import StoreHome from './Screens/StoreHome';
 import OrderManagement from './Screens/OrderManagement';
 import StockManagement from './Screens/StockManagement';
 import PickupManagement from './Screens/PickupManagement';
+import AddMenu from './Screens/AddMenu';
 
 const Stack = createNativeStackNavigator();
 
@@ -17,6 +18,7 @@ export default function StoreStack() {
       <Stack.Screen name="OrderManagement" component={OrderManagement} />
       <Stack.Screen name="StockManagement" component={StockManagement} />
       <Stack.Screen name="PickupManagement" component={PickupManagement} />
+      <Stack.Screen name="AddMenu" component={AddMenu} />
     </Stack.Navigator>
   );
 } 

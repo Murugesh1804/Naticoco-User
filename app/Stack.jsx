@@ -36,6 +36,7 @@ import AddStore from "./AdminScreens/AddStore";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState } from "react";
 
+
 const Stack = createNativeStackNavigator();
 
 export default function StackNavigator() {
@@ -197,6 +198,7 @@ export default function StackNavigator() {
           component={StoreStack}
           options={{ headerShown: false }}
         />
+        
         <Stack.Screen
           name="postOrder"
           component={Postorder}

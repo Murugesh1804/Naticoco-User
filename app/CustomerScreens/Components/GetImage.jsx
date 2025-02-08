@@ -6,7 +6,7 @@ async function getImage(imag) {
   console.log(img);
   try {
     const response = await axios.get(
-      `http://192.168.29.165:3500/images/${img}`,
+      `http://147.93.110.87:3500/images/${img}`,
       {
         responseType: "arraybuffer",
       }

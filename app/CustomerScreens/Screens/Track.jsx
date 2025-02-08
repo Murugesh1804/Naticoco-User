@@ -39,7 +39,7 @@ const TrackScreen = ({ route, navigation }) => {
   useEffect(() => {
    const generateOTP = async () => {
     try {
-     const response = await axios.post("http://192.168.29.165:3500/api/user/postUserOTP", {
+     const response = await axios.post("http://147.93.110.87:3500/api/user/postUserOTP", {
      orderId : orderId
     });
     if (response.status == 200) {
@@ -76,10 +76,17 @@ const TrackScreen = ({ route, navigation }) => {
        text: "Yes",
        onPress: async () => {
          try {
-           await axios.patch(
-             `http://192.168.29.165:3500/api/orders/${orderId}/cancel`
-           );
-           navigation.navigate("Home");
+           if (order.status == "PENDING" || order.status == "PREPARING") {
+            await axios.post(
+              `http://147.93.110.87:3500/citystore/updateorder`, {
+               orderId: orderId,
+               status : "REJECTED"
+              }
+            );
+            navigation.navigate("MainTabs");
+          }else {
+           Alert.alert(`Order is ${order.status}`, "You can't cancel this order");
+          }
          } catch (error) {
            Alert.alert("Error", "Could not cancel order");
          }
@@ -94,7 +101,7 @@ const TrackScreen = ({ route, navigation }) => {
   const fetchOrderData = async () => {
     try {
       const response = await axios.post(
-        `http://192.168.29.165:3500/user/getorderId`,
+        `http://147.93.110.87:3500/user/getorderId`,
         { orderId }
       );
 
@@ -140,7 +147,7 @@ const TrackScreen = ({ route, navigation }) => {
     try {
       const cleanOrderId = orderId.replace('ORD#', '');
       const response = await axios.get(
-        `http://192.168.29.165:3500/Adminstore/delivery/location/${cleanOrderId}`
+        `http://147.93.110.87:3500/Adminstore/delivery/location/${cleanOrderId}`
       );
       // console.log(response.data);
       if (response.status === 200 && response.data) {
@@ -153,7 +160,14 @@ const TrackScreen = ({ route, navigation }) => {
         }));
       }
     } catch (err) {
-      console.error('Error fetching driver location:', err);
+      // console.error('Error fetching driver location:', err);
+      setLocations(prev => ({
+       ...prev,
+       driver: {
+         latitude:  13.04411943278981, //response.data.latitude,
+         longitude: 80.23868788554641 // response.data.longitude
+       }
+     }));
     }
   };
 
@@ -228,6 +242,10 @@ const TrackScreen = ({ route, navigation }) => {
   }
 
   // console.log(order);
+
+
+
+
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -687,22 +705,22 @@ driverMarker: {
 });
 
 
-// const getETAFromGoogle = async (loc1,loc2) => {
-//  const lat1 = loc1.latitude;
-//  const lon1 = loc1.longitude;
-//  const lat2 = loc2.latitude;
-//  const lon2 = loc2.longitude;
+const getETAFromGoogle = async (loc1,loc2) => {
+ const lat1 = loc1.latitude;
+ const lon1 = loc1.longitude;
+ const lat2 = loc2.latitude;
+ const lon2 = loc2.longitude;
 
-//  const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${lat1},${lon1}&destination=${lat2},${lon2}&key=${GOOGLE_MAPS_KEY}`;
+ const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${lat1},${lon1}&destination=${lat2},${lon2}&key=${GOOGLE_MAPS_KEY}`;
 
-//  try {
-//    const response = await axios.get(url);
-//    const duration = response.data.routes[0].legs[0].duration.text;
-//    return duration;
-//  } catch (error) {
-//    console.error("Error fetching ETA:", error);
-//    return "Unavailable";
-//  }
-// };
+ try {
+   const response = await axios.get(url);
+   const duration = response.data.routes[0].legs[0].duration.text;
+   return duration;
+ } catch (error) {
+   console.error("Error fetching ETA:", error);
+   return "Unavailable";
+ }
+};
 
 export default TrackScreen;

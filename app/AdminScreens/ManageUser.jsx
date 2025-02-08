@@ -107,7 +107,7 @@ const ManageUser = () => {
     const fetchUsers = async () => {
       try {
         const response = await axios.get(
-          "http://192.168.29.165:3500/auth/users"
+          "http://147.93.110.87:3500/auth/users"
         );
         const usersData = response.data.users || [];
         console.log("Users data:", usersData);

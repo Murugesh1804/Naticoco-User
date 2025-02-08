@@ -33,7 +33,7 @@ export default ForgetPass = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://192.168.29.165:3500/auth/reset-password",
+        "http://147.93.110.87:3500/auth/reset-password",
         { email }
       );
 
@@ -61,7 +61,7 @@ export default ForgetPass = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://192.168.29.165:3500/auth/verify-otp",
+        "http://147.93.110.87:3500/auth/verify-otp",
         { email, otp }
       );
 
@@ -98,7 +98,7 @@ export default ForgetPass = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://192.168.29.165:3500/user/reset-password",
+        "http://147.93.110.87:3500/user/reset-password",
         { email, otp, newPassword }
       );
 

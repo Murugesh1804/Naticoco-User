@@ -18,7 +18,8 @@ import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SCREEN_WIDTH } from "../../CustomerScreens/Screens/Home/constants";
-import DropDown from 'react-native-paper-dropdown';
+import {Dropdown} from 'react-native-paper-dropdown';
+import { useNavigation } from "expo-router";
 
 
 const StockItem = ({ item, onDeleteProduct }) => {
@@ -34,7 +35,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
     try {
       setIsSaving(true);
       await axios.put(
-        `http://192.168.29.165:3500/citystore/Updatemenu/${item._id}`,
+        `http://147.93.110.87:3500/citystore/Updatemenu/${item._id}`,
         {
           // stock: parseInt(stockValue), // Convert to integer
           price: parseFloat(priceValue), // Convert to float
@@ -65,7 +66,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
           onPress: async () => {
             try {
               await axios.delete(
-                `http://192.168.29.165:3500/citystore/Deletemenu/${item._id}`
+                `http://147.93.110.87:3500/citystore/Deletemenu/${item._id}`
               );
             } catch (error) {
               console.error("Error deleting item:", error);
@@ -168,6 +169,8 @@ export default function StockManagement({ navigation }) {
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [showCategoryDropDown, setShowCategoryDropDown] = useState(false);
   const [showSubCategoryDropDown, setShowSubCategoryDropDown] = useState(false);
+  const [subCategory,setSubCategory] = useState();
+  const nav = useNavigation();
   const categories = [
     "ALL",
     ...new Set(stockItems.map((item) => item.category)),
@@ -193,7 +196,7 @@ export default function StockManagement({ navigation }) {
         }
 
         const response = await axios.get(
-          `http://192.168.29.165:3500/citystore/getallmenu?storeId=${storeId}`
+          `http://147.93.110.87:3500/citystore/getallmenu?storeId=${storeId}`
         );
         setStockItems(response.data);
       } catch (error) {
@@ -225,156 +228,6 @@ export default function StockManagement({ navigation }) {
     (item) => activeCategory === "ALL" || item.category === activeCategory
   );
 
-  const [newItem, setNewItem] = useState({
-    storeId: "",
-    itemName: "",
-    description: "",
-    price: "",
-    category: "",
-    stock: 20,
-    stock: 20,
-    subCategory: "",
-    image: null,
-    availability: true,
-    bestSeller: false,
-    newArrival: false,
-  });
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setNewItem((prev) => ({ ...prev, image: result.assets[0].uri }));
-    }
-  };
-
-  const handleAddItem = async () => {
-    try {
-      const vendorCredentialsString = await AsyncStorage.getItem(
-        "vendorCredentials"
-      );
-      if (!vendorCredentialsString) {
-        Alert.alert("Error", "No vendor credentials found");
-        return;
-      }
-
-      const vendorCredentials = JSON.parse(vendorCredentialsString);
-      const storeId = vendorCredentials?.vendorData?.storeId;
-
-      if (!storeId) {
-        Alert.alert("Error", "No store ID found");
-        return;
-      }
-
-      if (
-        !newItem.itemName ||
-        !newItem.price ||
-        !newItem.category ||
-        !newItem.image
-      ) {
-        Alert.alert(
-          "Error",
-          "Please fill all required fields and add an image"
-        );
-        return;
-      }
-
-      const formData = new FormData();
-      formData.append("storeId", storeId);
-      formData.append("itemName", newItem.itemName);
-      formData.append("description", newItem.description);
-      formData.append("price", newItem.price);
-      formData.append("stock", 20);
-      formData.append("category", newItem.category);
-      formData.append("subCategory", newItem.subCategory);
-      formData.append("availability", newItem.availability);
-      formData.append("bestSeller", newItem.bestSeller);
-      formData.append("newArrival", newItem.newArrival);
-
-      if (newItem.image) {
-        const imageUri = newItem.image;
-        const filename = imageUri.split("/").pop();
-        const match = /\.(\w+)$/.exec(filename);
-        const type = match ? `image/${match[1]}` : "image";
-
-        formData.append("image", {
-          uri: imageUri,
-          name: filename,
-          type,
-        });
-      }
-      const response = await axios.post(
-        "http://192.168.29.165:3500/citystore/Addmenu",
-        formData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
-
-      if (response.status === 201) {
-        setModalVisible(false);
-        Alert.alert("Success", "Item added successfully");
-        setNewItem({
-          storeId: "",
-          itemName: "",
-          description: "",
-          price: "",
-          stock: 0,
-          category: "",
-          subCategory: "",
-          image: null,
-          availability: true,
-          bestSeller: false,
-          newArrival: false,
-        });
-        const menuResponse = await axios.get(
-          `http://192.168.29.165:3500/citystore/getallmenu?storeId=${storeId}`
-        );
-        setStockItems(menuResponse.data);
-      }
-    } catch (error) {
-      console.error("Error adding item:", error);
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Failed to add item"
-      );
-    }
-  };
-
-  const foodCategories = [
-   { label: 'Electronics', value: 'electronics' },
-   { label: 'Clothing', value: 'clothing' },
-   { label: 'Books', value: 'books' },
- ];
-
- const subCategoriesMap = {
-   electronics: [
-     { label: 'Phones', value: 'phones' },
-     { label: 'Laptops', value: 'laptops' },
-     { label: 'Tablets', value: 'tablets' },
-   ],
-   clothing: [
-     { label: 'Shirts', value: 'shirts' },
-     { label: 'Pants', value: 'pants' },
-     { label: 'Shoes', value: 'shoes' },
-   ],
-   books: [
-     { label: 'Fiction', value: 'fiction' },
-     { label: 'Non-Fiction', value: 'non-fiction' },
-     { label: 'Academic', value: 'academic' },
-   ],
- };
-
- useEffect(() => {
-  setSubCategory('');
-}, [newItem.category]);
 
 // const handleCategoryChange = (value) => {
 //   setCategory(value);
@@ -393,7 +246,7 @@ export default function StockManagement({ navigation }) {
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Stock Management</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
+        <TouchableOpacity onPress={() => navigation.navigate("AddMenu")}>
           <Ionicons name="add-circle-outline" size={24} color="#333" />
         </TouchableOpacity>
       </View>
@@ -435,166 +288,7 @@ export default function StockManagement({ navigation }) {
         ))}
       </ScrollView>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add New Item</Text>
 
-            <TouchableOpacity
-              style={styles.imagePickerButton}
-              onPress={pickImage}
-            >
-              {newItem.image ? (
-                <Image
-                  source={{ uri: newItem.image }}
-                  style={styles.previewImage}
-                />
-              ) : (
-                <Ionicons name="camera" size={40} color="#666" />
-              )}
-            </TouchableOpacity>
-
-            <TextInput
-              label="Item Name *"
-              value={newItem.itemName}
-              onChangeText={(text) =>
-                setNewItem((prev) => ({ ...prev, itemName: text }))
-              }
-              style={styles.modalInput}
-              mode="outlined"
-            />
-
-            {/* <TextInput
-              label="Category *"
-              value={newItem.category}
-              onChangeText={(text) =>
-                setNewItem((prev) => ({ ...prev, category: text }))
-              }
-              style={styles.modalInput}
-              mode="outlined"
-            />
-
-            <TextInput
-              label="Sub Category"
-              value={newItem.subCategory}
-              onChangeText={(text) =>
-                setNewItem((prev) => ({ ...prev, subCategory: text }))
-              }
-              style={styles.modalInput}
-              mode="outlined"
-            /> */}
-
-             <DropDown
-              label="Category *"
-              mode="outlined"
-              visible={showCategoryDropDown}
-              showDropDown={() => setShowCategoryDropDown(true)}
-              onDismiss={() => setShowCategoryDropDown(false)}
-              value={newItem.category}
-              setValue={(text) =>
-               setNewItem((prev) => ({ ...prev, category: text }))}
-              list={foodCategories}
-             />
-            
-             {newItem.category && (
-              <DropDown
-                label="Sub Category"
-                mode="outlined"
-                visible={showSubCategoryDropDown}
-                showDropDown={() => setShowSubCategoryDropDown(true)}
-                onDismiss={() => setShowSubCategoryDropDown(false)}
-                value={newItem.subCategory}
-                setValue={(text) =>
-                 setNewItem((prev) => ({ ...prev, subCategory: text }))}
-                list={subCategoriesMap[newItem.category] || []}
-                style={{ marginTop: 10 }}
-              />
-            )}
-
-            <HelperText type="error" visible={!newItem.category}>
-              Category is required
-            </HelperText>
-
-            <TextInput
-              label="Description"
-              value={newItem.description}
-              onChangeText={(text) =>
-                setNewItem((prev) => ({ ...prev, description: text }))
-              }
-              style={styles.modalInput}
-              mode="outlined"
-              multiline
-            />
-
-            <TextInput
-              label="Price *"
-              value={newItem.price}
-              onChangeText={(text) =>
-                setNewItem((prev) => ({ ...prev, price: text }))
-              }
-              style={styles.modalInput}
-              mode="outlined"
-              keyboardType="numeric"
-              left={<TextInput.Affix text="₹" />}
-            />
-
-            <View style={styles.togglesContainer}>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Available</Text>
-                <Switch
-                  value={newItem.availability}
-                  onValueChange={(value) =>
-                    setNewItem((prev) => ({ ...prev, availability: value }))
-                  }
-                  color="#F8931F"
-                />
-              </View>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>Best Seller</Text>
-                <Switch
-                  value={newItem.bestSeller}
-                  onValueChange={(value) =>
-                    setNewItem((prev) => ({ ...prev, bestSeller: value }))
-                  }
-                  color="#F8931F"
-                />
-              </View>
-              <View style={styles.toggleRow}>
-                <Text style={styles.toggleLabel}>New Arrival</Text>
-                <Switch
-                  value={newItem.newArrival}
-                  onValueChange={(value) =>
-                    setNewItem((prev) => ({ ...prev, newArrival: value }))
-                  }
-                  color="#F8931F"
-                />
-              </View>
-            </View>
-
-            <View style={styles.modalButtons}>
-              <Button
-                mode="outlined"
-                onPress={() => setModalVisible(false)}
-                style={styles.modalButton}
-              >
-                Cancel
-              </Button>
-              <Button
-                mode="contained"
-                onPress={handleAddItem}
-                style={styles.modalButton}
-              >
-                Add Item
-              </Button>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

@@ -67,7 +67,7 @@ export default function HomeScreen() {
       const authToken = parsedLoginData?.token?.token || token;
 
       const response = await axios.get(
-        "http://192.168.29.165:3500/api/user/nearest",
+        "http://147.93.110.87:3500/api/user/nearest",
         {
           params: { latitude, longitude },
           headers: {
