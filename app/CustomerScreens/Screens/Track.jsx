@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   FlatList,
+  Platform,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -310,6 +311,7 @@ const TrackScreen = ({ route, navigation }) => {
           <MapViewDirections
             origin={locations.driver}
             destination={locations.user}
+            
             apikey={GOOGLE_MAPS_KEY}
             strokeWidth={3}
             strokeColor="#F8931F"
