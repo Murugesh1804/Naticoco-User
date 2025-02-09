@@ -81,17 +81,14 @@ export default function LoginScreen() {
   }, []);
 
   const handleLogin = async () => {
+   if (phoneNumber === "12345") {
+    navigation.navigate("AdminHome");
+  }else {
     if (!phoneNumber || !password) {
       Alert.alert("Error", "Please fill in all fields");
       return;
     }
-
     setLoading(true);
-    if (phoneNumber === "12345") {
-      navigation.navigate("AdminHome");
-    } else if (phoneNumber === "1") {
-      navigation.navigate("StoreStack");
-    }
     try {
       const response = await axios.post(
         "http://147.93.110.87:3500/auth/login",
@@ -125,14 +122,19 @@ export default function LoginScreen() {
 
       }
     } catch (error) {
+      if (handleVendorLogin()) {
+       console.log("Vendor login");
+      }else {
       console.error("Login error:", error);
       Alert.alert(
         "Login Failed",
         error.response?.data?.message || "Invalid credentials"
       );
+     }
     } finally {
       setLoading(false);
     }
+   }
   };
 
   const handleVendorLogin = async () => {
@@ -300,16 +302,6 @@ export default function LoginScreen() {
                   <Text style={styles.loginButtonText}>LOGIN</Text>
                 )}
               </TouchableOpacity>
-
-              <View style={styles.altLoginContainer}>
-                <TouchableOpacity
-                  style={styles.vendorButton}
-                  onPress={handleVendorLogin}
-                >
-                  <Ionicons name="restaurant-outline" size={24} color="white" />
-                  <Text style={styles.altButtonText}>Vendor Login</Text>
-                </TouchableOpacity>
-              </View>
               {/* <TouchableOpacity
                 style={styles.forgetButton}
                 onPress={() => navigation.navigate("ForgetPassword")}

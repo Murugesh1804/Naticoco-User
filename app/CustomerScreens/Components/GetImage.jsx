@@ -3,7 +3,7 @@ import { Buffer } from "buffer";
 
 async function getImage(imag) {
   const img = imag.split("/ImageStore/")[1];
-  console.log(img);
+  // console.log(img);
   try {
     const response = await axios.get(
       `http://147.93.110.87:3500/images/${img}`,

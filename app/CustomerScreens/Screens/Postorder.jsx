@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,17 @@ import {
   StyleSheet,
   ScrollView,
   Platform,
+  FlatList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import getImage from '../Components/GetImage';
+import RenderProduct from '../Components/PostOrderCard';
+
+
+
 
 export default function PostOrderScreen({ navigation }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -19,6 +26,16 @@ export default function PostOrderScreen({ navigation }) {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedQuantity, setSelectedQuantity] = useState('More Than 2KG');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [menuItems,setMenuItems] = useState([]);
+
+
+  useEffect(() => {
+   const fetchMenu = async () => {
+    const menu = await AsyncStorage.getItem("storeMenu");
+    setMenuItems(JSON.parse(menu));
+   }
+   fetchMenu();
+  })
 
   const formatDate = (date) => {
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -53,6 +70,14 @@ export default function PostOrderScreen({ navigation }) {
     }
   };
 
+  const renderProduct = ({item}) => {
+   return (
+    <RenderProduct
+      item={item}
+     />
+   )
+  }
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -63,7 +88,7 @@ export default function PostOrderScreen({ navigation }) {
         <Text style={styles.headerTitle}>Post Order</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <View style={styles.scrollView}>
         {/* Bulk Order Notice */}
         <View style={styles.noticeContainer}>
           <Text style={styles.noticeText}>
@@ -97,44 +122,17 @@ export default function PostOrderScreen({ navigation }) {
         </TouchableOpacity>
 
         {/* Category Selection */}
-        <TouchableOpacity style={styles.categoryButton}>
-          <Text style={[styles.buttonText, { color: '#666' }]}>Select Category</Text>
+        <TouchableOpacity style={[styles.timeButton,{justifyContent : 'center',alignItems : 'center',backgroundColor : 'green'}]}>
+          <Text style={styles.buttonText}>Submit Order</Text>
         </TouchableOpacity>
 
         {/* Product Cards */}
-        <View style={styles.productContainer}>
-          {/* Chicken Malai Tikka Card */}
-          <View style={styles.productCard}>
-            <Image
-              source={require('../../../assets/images/Chicken65.jpg')} // Make sure to add your image
-              style={styles.productImage}
-            />
-            <View style={styles.productInfo}>
-              <Text style={styles.productName}>Chicken Malai Tikka{'\n'}(Marinated)</Text>
-              <View style={styles.productDetails}>
-                <View>
-                  <Text style={styles.price}>Rs. 149/-</Text>
-                  <Text style={styles.quantity}>2-3 pieces</Text>
-                </View>
-                <TouchableOpacity style={styles.addButton}>
-                  <LinearGradient
-                    colors={['#F8931F', '#f4a543']}
-                    style={styles.addButtonGradient}
-                  >
-                    <Text style={styles.addButtonText}>ADD</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.weightBadge}>
-                <Text style={styles.weightText}>500 grams</Text>
-              </View>
-              <View style={styles.bestsellerBadge}>
-                <Text style={styles.bestsellerText}>BESTSELLER</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </ScrollView>
+        <FlatList 
+         data={menuItems}
+         renderItem={renderProduct}
+         keyExtractor={item => item._id}
+         />
+      </View>
 
       {showDatePicker && (
         <DateTimePicker
@@ -180,6 +178,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginBottom : 100
   },
   noticeContainer: {
     padding: 16,
@@ -208,7 +207,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginHorizontal: 16,
-    marginTop: 10,
+    margin: 10,
   },
   categoryButton: {
     backgroundColor: '#f5f5f5',

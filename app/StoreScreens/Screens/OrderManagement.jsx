@@ -485,6 +485,7 @@ const styles = StyleSheet.create({
   ordersList: {
     flex: 1,
     padding: scale(20),
+    marginBottom : 100
   },
   orderCard: {
     marginBottom: verticalScale(15),

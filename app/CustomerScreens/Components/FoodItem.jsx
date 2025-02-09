@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 
 export default function FoodItem({ item, onPress }) {
   const [image,setImage] = useState(null);
+  const [isLoading,setIsLoading] = useState(false);
   const { addToCart, cartItems, cartCount, increaseQuantity, decreaseQuantity } = useCart();
   const cartItem = cartItems.find(i => i._id === item._id || i.id === item._id || item.id);
   // console.log(cartItem);
@@ -45,11 +46,13 @@ export default function FoodItem({ item, onPress }) {
 }, [item.image]);
   return (
     <TouchableOpacity style={styles.container} onPress={onPress}>
-      <Image
-        source={{uri:image}}
-        style={styles.image}
-        resizeMode="cover"
-      />
+      {isLoading ? (
+            <View style={styles.image}>
+              <ActivityIndicator size="large" color="#F8931F" />
+            </View>
+          ) : (
+            <Image source={{ uri: image }} style={styles.image} resizeMode="cover" />
+          )}
       <View style={styles.info}>
         <Text style={styles.name}>{item.itemName}</Text>
         <Text style={styles.quantity}>{item.quantity}</Text>
@@ -125,6 +128,8 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 8,
+    justifyContent :'center',
+    alignItems : 'center'
   },
   info: {
     flex: 1,

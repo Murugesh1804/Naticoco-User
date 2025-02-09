@@ -4,6 +4,7 @@ import { MotiView, AnimatePresence } from 'moti';
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from 'expo-haptics';
 import getImage from '../../../Components/GetImage';
+import { useCart } from '../../../context/CartContext';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -138,6 +139,8 @@ const styles = {
     width: '100%',
     height: 180,
     backgroundColor: '#f5f5f5',
+    justifyContent :'center',
+    alignItems : 'center'
   },
   loadingContainer: {
     justifyContent: 'center',
