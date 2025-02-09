@@ -66,14 +66,11 @@ export function CartProvider({ children }) {
 
   // Function to decrease quantity
   const decreaseQuantity = (itemId) => {
-
-    setCartItems(prevItems =>
-      prevItems.map(item =>
-        item._id === itemId && item.quantity > 1
-          ? { ...item, quantity: item.quantity - 1 }
-          : removeFromCart(item._id)
-      ).filter(item => item.quantity > 0) // Remove items with quantity 0
-    );
+   setCartItems(prevItems =>
+    prevItems.map(item =>
+      item._id === itemId ? { ...item, quantity: item.quantity - 1 } : item
+    )
+  );
   };
 
   return (
