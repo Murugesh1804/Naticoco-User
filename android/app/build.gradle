@@ -81,14 +81,17 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
+    buildFeatures {
+        buildConfig = true
+    }
     ndkVersion rootProject.ext.ndkVersion
 
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.naticoconew"
+    namespace "com.yourcompany.myexpoapp"
     defaultConfig {
-        applicationId 'com.yourcompany.myexpoapp'
+        applicationId "com.yourcompany.myexpoapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
