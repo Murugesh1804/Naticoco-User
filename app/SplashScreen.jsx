@@ -29,12 +29,12 @@ export default function CustomSplashScreen({ onFinish }) {
           style={styles.image}
           resizeMode="cover"
         />
-        <Text style={styles.quote}>“High-Quality <Text style={styles.text2}>Poultry</Text>, Low-Quality <Text style={styles.text2}>Worries</Text>”</Text>
+        {/* <Text style={styles.quote}>“High-Quality <Text style={styles.text2}>Poultry</Text>, Low-Quality <Text style={styles.text2}>Worries</Text>”</Text>
         <Text style={styles.mark}>R</Text>
         <View style={styles.textContainer}>
          <Text style={styles.text}>A Unit of MaktSon Group</Text>
          <Image source={require('../assets/images/prod.png')} style={styles.logo} />
-        </View>
+        </View> */}
     </View>
   );
 }

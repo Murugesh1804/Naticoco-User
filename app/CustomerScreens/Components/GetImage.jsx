@@ -6,7 +6,7 @@ async function getImage(imag) {
   // console.log(img);
   try {
     const response = await axios.get(
-      `http://147.93.110.87:3500/images/${img}`,
+      `https://api.naticoco.com/images/${img}`,
       {
         responseType: "arraybuffer",
       }

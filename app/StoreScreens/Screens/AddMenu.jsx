@@ -122,7 +122,7 @@ export default function AddMenu({ navigation }) {
       }
 
       const response = await axios.post(
-        "http://147.93.110.87:3500/citystore/Addmenu",
+        "https://api.naticoco.com/citystore/Addmenu",
         formData,
         {
           headers: {

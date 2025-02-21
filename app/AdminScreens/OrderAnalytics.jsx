@@ -152,7 +152,7 @@ export default function OrderAnalytics() {
     try {
       setLoading(true);
       const response = await axios.get(
-        `http://147.93.110.87:3500/api/orders/analytics?timeFilter=${timeFilter}`
+        `https://api.naticoco.com/api/orders/analytics?timeFilter=${timeFilter}`
       );
       if (response.data) {
         setAnalytics({
@@ -280,7 +280,7 @@ export default function OrderAnalytics() {
                       {store.orders}
                     </DataTable.Cell>
                     <DataTable.Cell numeric textColor="#0f1c57">
-                      {store.rating.toFixed(1)}
+                      {store.rating}
                     </DataTable.Cell>
                   </DataTable.Row>
                 ))}
@@ -322,13 +322,13 @@ export default function OrderAnalytics() {
         />
         <StatCard
           title="Revenue"
-          value={`₹${analytics.totalStats.revenue.toFixed(2)}`}
+          value={`₹${analytics.totalStats.revenue}`}
           percentageChange={analytics.totalStats.percentageChanges.revenue}
           isPositive={analytics.totalStats.percentageChanges.revenue > 0}
         />
         <StatCard
           title="Avg. Order Value"
-          value={`₹${analytics.totalStats.avgOrderValue.toFixed(2)}`}
+          value={`₹${analytics.totalStats.avgOrderValue}`}
           percentageChange={
             analytics.totalStats.percentageChanges.avgOrderValue
           }

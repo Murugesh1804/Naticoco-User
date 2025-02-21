@@ -2,7 +2,7 @@
 
 import { io } from "socket.io-client";
 
-const SOCKET_URL = "http://147.93.110.87:3500"; // Replace with your backend URL
+const SOCKET_URL = "https://api.naticoco.com"; // Replace with your backend URL
 
 // Initialize the socket
 const socket = io(SOCKET_URL, {

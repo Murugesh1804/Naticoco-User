@@ -12,7 +12,6 @@ import {
   Platform,
   ImageBackground,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
 import { useState, useRef, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,100 +26,23 @@ export default function ProfileScreen() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(50)).current;
-  const scaleAnim = useRef(new Animated.Value(0.3)).current;
-  const menuItemsAnim = useRef(
-    [...Array(2)].map(() => new Animated.Value(SCREEN_WIDTH))
-  ).current;
+
 
   useEffect(() => {
     fetchName();
+ }, []);
 
-    // Animate profile section
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-      Animated.spring(slideAnim, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start();
 
-    // Animate menu items sequentially
-    menuItemsAnim.forEach((anim, index) => {
-      Animated.spring(anim, {
-        toValue: 0,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-        delay: index * 100,
-      }).start();
-    });
-  }, []);
-
-  const pickImage = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 4],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        Animated.sequence([
-          Animated.timing(scaleAnim, {
-            toValue: 0.8,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.spring(scaleAnim, {
-            toValue: 1,
-            tension: 50,
-            friction: 7,
-            useNativeDriver: true,
-          }),
-        ]).start();
-        setImage(result.assets[0].uri);
-      }
-    } catch (error) {
-      Alert.alert("Error", "Failed to pick image");
-    }
-  };
 
   const handleLogout = async () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
       {
         text: "Logout",
-        onPress: () => {
-          Animated.parallel([
-            Animated.timing(fadeAnim, {
-              toValue: 0,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-            Animated.timing(slideAnim, {
-              toValue: 50,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-          ]).start(async () => {
+        onPress: async () => {
             navigation.replace("Login");
             await AsyncStorage.clear();
-          });
+
         },
         style: "destructive",
       },
@@ -152,10 +74,6 @@ export default function ProfileScreen() {
         <Animated.ScrollView
           contentContainerStyle={[
             styles.scrollContent,
-            {
-              opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
-            },
           ]}
           showsVerticalScrollIndicator={false}
         >
@@ -191,7 +109,7 @@ export default function ProfileScreen() {
                   key={route}
                   style={{
                     width: "100%",
-                    transform: [{ translateX: menuItemsAnim[index] }],
+             
                   }}
                 >
                   <TouchableOpacity

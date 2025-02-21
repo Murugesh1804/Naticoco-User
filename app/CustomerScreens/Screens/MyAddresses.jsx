@@ -90,7 +90,7 @@ export default function MyAddresses() {
       }
 
       const response = await axios.get(
-        `http://147.93.110.87:3500/location/address/${userId}`
+        `https://api.naticoco.com/location/address/${userId}`
       );
       if (response.status === 200) {
         setAddresses(response.data.addresses);
@@ -132,7 +132,7 @@ export default function MyAddresses() {
       };
 
       const response = await axios.post(
-        "http://147.93.110.87:3500/location/address",
+        "https://api.naticoco.com/location/address",
         addressData
       );
 
@@ -174,7 +174,7 @@ export default function MyAddresses() {
       }
       console.log(userId, addressId);
       const response = await axios.delete(
-        `http://147.93.110.87:3500/location/address/${userId}/${addressId}`
+        `https://api.naticoco.com/location/address/${userId}/${addressId}`
       );
 
       if (response.status === 200) {

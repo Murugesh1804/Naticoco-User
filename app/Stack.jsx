@@ -14,7 +14,7 @@ import Profile from "./CustomerScreens/Screens/Profile";
 import MyAddresses from "./CustomerScreens/Screens/MyAddresses";
 import FilteredItems from "./CustomerScreens/Components/FilteredItems";
 import Welcome from "./CustomerScreens/Screens/Welcome";
-import Location from "./CustomerScreens/Screens/Location";
+// import Location from "./CustomerScreens/Screens/Location";
 import StoreType from "./CustomerScreens/Screens/StoreType";
 import CrispyHome from "./CustomerScreens/Screens/CrispyHome";
 import { Dimensions } from "react-native";
@@ -178,11 +178,11 @@ export default function StackNavigator() {
           component={Welcome}
           options={{ headerShown: false }}
         />
-        <Stack.Screen
+        {/* <Stack.Screen
           name="Location"
           component={Location}
           options={{ headerShown: false }}
-        />
+        /> */}
         <Stack.Screen
           name="StoreType"
           component={StoreType}

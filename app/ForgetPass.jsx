@@ -33,7 +33,7 @@ export default ForgetPass = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        "http://147.93.110.87:3500/auth/reset-password",
+        "https://api.naticoco.com/auth/reset-password",
         { email }
       );
 
@@ -52,32 +52,32 @@ export default ForgetPass = () => {
     }
   };
 
-  const handleOTPVerify = async () => {
-    if (!otp) {
-      Alert.alert("Error", "Please enter the OTP");
-      return;
-    }
+  // const handleOTPVerify = async () => {
+  //   if (!otp) {
+  //     Alert.alert("Error", "Please enter the OTP");
+  //     return;
+  //   }
 
-    try {
-      setLoading(true);
-      const response = await axios.post(
-        "http://147.93.110.87:3500/auth/verify-otp",
-        { email, otp }
-      );
+  //   try {
+  //     setLoading(true);
+  //     const response = await axios.post(
+  //       "https://api.naticoco.com/auth/resetpass-otp",
+  //       { email, otp }
+  //     );
 
-      if (response.status == 200) {
-        Alert.alert("Success", "OTP verified successfully");
-        setStep(3);
-      }
-    } catch (error) {
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Invalid OTP or something went wrong"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+  //     if (response.status == 200) {
+  //       Alert.alert("Success", "OTP verified successfully");
+  //       setStep(3);
+  //     }
+  //   } catch (error) {
+  //     Alert.alert(
+  //       "Error",
+  //       error.response?.data?.message || "Invalid OTP or something went wrong"
+  //     );
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handlePasswordReset = async () => {
     if (!newPassword || !confirmPassword) {
@@ -95,30 +95,37 @@ export default ForgetPass = () => {
       return;
     }
 
-    try {
-      setLoading(true);
-      const response = await axios.post(
-        "http://147.93.110.87:3500/user/reset-password",
-        { email, otp, newPassword }
-      );
+    if (!otp) {
+     Alert.alert("Error", "Please enter the OTP");
+     return;
+   }
 
-      if (response.data.success) {
-        Alert.alert("Success", "Password reset successfully", [
-          {
-            text: "OK",
-            onPress: () => navigation.navigate("Login"),
-          },
-        ]);
-      }
-    } catch (error) {
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Failed to reset password"
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+   try {
+     console.log(otp,newPassword);
+     setLoading(true);
+     const response = await axios.patch(
+       "https://api.naticoco.com/auth/resetpass-otp",
+       { token : otp,
+         pwd : newPassword 
+        }
+     );
+     console.log(response.status);
+     if (response.status == 200 || 201) {
+       Alert.alert("Success", "OTP verified successfully");
+       navigation.navigate('Login');
+     }
+   } catch (error) {
+     Alert.alert(
+       "Error",
+       error.response?.data?.message || "Invalid OTP or something went wrong"
+     );
+   } finally {
+     setLoading(false);
+   }
+ };
+
+
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -162,19 +169,7 @@ export default ForgetPass = () => {
                 maxLength={6}
                 style={styles.input}
               />
-              <Button
-                mode="contained"
-                onPress={handleOTPVerify}
-                loading={loading}
-                style={styles.button}
-              >
-                Verify OTP
-              </Button>
-            </View>
-          )}
-
-          {step === 3 && (
-            <View style={styles.inputContainer}>
+              <View style={styles.inputContainer}>
               <TextInput
                 label="New Password"
                 value={newPassword}
@@ -200,6 +195,8 @@ export default ForgetPass = () => {
                 Reset Password
               </Button>
             </View>
+            </View>
+            
           )}
 
           <TouchableOpacity
@@ -251,6 +248,7 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 10,
     paddingVertical: 8,
+    backgroundColor : '#F8931F'
   },
   backToLogin: {
     marginTop: 20,
@@ -260,3 +258,4 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
 });
+

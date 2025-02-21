@@ -43,16 +43,13 @@ export default function Welcome({ route }) {
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-      const address = await AsyncStorage.getItem("userLocation");
-      if (address) {
-        navigation.navigate("StoreType");
-      } else {
-        navigation.navigate("Location");
-      }
-    }, 3000);
+      // const address = await AsyncStorage.getItem("userLocation");
+      navigation.navigate("StoreType");
+
 
     return () => clearTimeout(timer);
-  }, []);
+  },3000);
+ })
 
   const fetchName = async () => {
     try {

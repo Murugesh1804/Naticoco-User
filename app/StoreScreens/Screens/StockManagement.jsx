@@ -35,7 +35,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
     try {
       setIsSaving(true);
       await axios.put(
-        `http://147.93.110.87:3500/citystore/Updatemenu/${item._id}`,
+        `https://api.naticoco.com/citystore/Updatemenu/${item._id}`,
         {
           // stock: parseInt(stockValue), // Convert to integer
           price: parseFloat(priceValue), // Convert to float
@@ -66,7 +66,7 @@ const StockItem = ({ item, onDeleteProduct }) => {
           onPress: async () => {
             try {
               await axios.delete(
-                `http://147.93.110.87:3500/citystore/Deletemenu/${item._id}`
+                `https://api.naticoco.com/citystore/Deletemenu/${item._id}`
               );
             } catch (error) {
               console.error("Error deleting item:", error);
@@ -196,7 +196,7 @@ export default function StockManagement({ navigation }) {
         }
 
         const response = await axios.get(
-          `http://147.93.110.87:3500/citystore/getallmenu?storeId=${storeId}`
+          `https://api.naticoco.com/citystore/getallmenu?storeId=${storeId}`
         );
         setStockItems(response.data);
       } catch (error) {

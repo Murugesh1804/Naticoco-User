@@ -66,14 +66,11 @@ export default function HomeScreen() {
       const parsedLoginData = loginData ? JSON.parse(loginData) : null;
       const authToken = parsedLoginData?.token?.token || token;
 
-      const response = await axios.get(
-        "http://147.93.110.87:3500/api/user/nearest",
+      const response = await axios.post(
+        "https://api.naticoco.com/api/user/nearest",
         {
-          params: { latitude, longitude },
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            "Content-Type": "application/json",
-          },
+          longitude : longitude,
+          latitude : latitude
         }
       );
 
@@ -104,7 +101,7 @@ export default function HomeScreen() {
           onPress: () => navigation.navigate("StoreType"),
           style: "cancel",
         },
-        { text: "OK", onPress: () => navigation.navigate("Location") },
+        { text: "OK", onPress: () => navigation.navigate("MyAddresses") },
       ]);
     }
   };

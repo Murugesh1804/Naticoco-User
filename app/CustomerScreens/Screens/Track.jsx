@@ -40,7 +40,7 @@ const TrackScreen = ({ route, navigation }) => {
   useEffect(() => {
    const generateOTP = async () => {
     try {
-     const response = await axios.post("http://147.93.110.87:3500/api/user/postUserOTP", {
+     const response = await axios.post("https://api.naticoco.com/api/user/postUserOTP", {
      orderId : orderId
     });
     if (response.status == 200) {
@@ -79,7 +79,7 @@ const TrackScreen = ({ route, navigation }) => {
          try {
            if (order.status == "PENDING" || order.status == "PREPARING") {
             await axios.post(
-              `http://147.93.110.87:3500/citystore/updateorder`, {
+              `https://api.naticoco.com/citystore/updateorder`, {
                orderId: orderId,
                status : "REJECTED"
               }
@@ -102,7 +102,7 @@ const TrackScreen = ({ route, navigation }) => {
   const fetchOrderData = async () => {
     try {
       const response = await axios.post(
-        `http://147.93.110.87:3500/user/getorderId`,
+        `https://api.naticoco.com/user/getorderId`,
         { orderId }
       );
 
@@ -148,15 +148,15 @@ const TrackScreen = ({ route, navigation }) => {
     try {
       const cleanOrderId = orderId.replace('ORD#', '');
       const response = await axios.get(
-        `http://147.93.110.87:3500/Adminstore/delivery/location/${cleanOrderId}`
+        `https://api.naticoco.com/Adminstore/delivery/location/${cleanOrderId}`
       );
       // console.log(response.data);
       if (response.status === 200 && response.data) {
         setLocations(prev => ({
           ...prev,
           driver: {
-            latitude:  13.04411943278981, //response.data.latitude,
-            longitude: 80.23868788554641 // response.data.longitude
+            latitude:  response.data.latitude || 13.04411943278981, //,xa
+            longitude: response.data.longitude || 80.23868788554641 // 
           }
         }));
       }
@@ -262,14 +262,20 @@ const TrackScreen = ({ route, navigation }) => {
         initialRegion={getMapRegion()}
       >
 
-          <Marker coordinate={locations.driver} title="Driver Location">
+          <Marker coordinate={locations.driver || {
+           latitude: 37.7882,
+           longitude: -122.4324
+          }} title="Driver Location">
             <View style={[styles.marker, { backgroundColor: '#2196F3' }]}>
               <Ionicons name="bicycle" size={24} color="white" />
             </View>
           </Marker>
         {/* User Location Marker */}
         {locations.user && (
-          <Marker coordinate={locations.user} title="Delivery Location">
+          <Marker coordinate={locations.user || {
+           latitude: 37.7882,
+           longitude: -122.4324
+          }} title="Delivery Location">
             <View style={[styles.marker, { backgroundColor: '#4CAF50' }]}>
               <Ionicons name="location" size={24} color="white" />
             </View>
@@ -278,7 +284,10 @@ const TrackScreen = ({ route, navigation }) => {
 
         {/* Store Location Marker */}
         {locations.store && (
-          <Marker coordinate={locations.store} title="Store Location">
+          <Marker coordinate={locations.store || {
+           latitude: 37.7882,
+           longitude: -122.4324
+          }} title="Store Location">
             <View style={[styles.marker, { backgroundColor: '#F8931F' }]}>
               <Ionicons name="business" size={24} color="white" />
             </View>
@@ -287,7 +296,10 @@ const TrackScreen = ({ route, navigation }) => {
 
         {/* Driver Location Marker */}
         {locations.driver && order.status === 'OUT_FOR_DELIVERY' && (
-          <Marker coordinate={locations.driver} title="Driver Location">
+          <Marker coordinate={locations.driver || {
+           latitude: 37.7882,
+           longitude: -122.4324
+          } } title="Driver Location">
             <View style={[styles.marker, { backgroundColor: '#2196F3' }]}>
               <Ionicons name="bicycle" size={24} color="white" />
             </View>
@@ -296,12 +308,19 @@ const TrackScreen = ({ route, navigation }) => {
 
         {locations.driver && locations.user && order.status === 'READY' && (
           <MapViewDirections
-            origin={locations.driver}
-            destination={locations.store}
+            origin={locations.driver || {
+             latitude: 37.7882,
+             longitude: -122.4324
+            }}
+            destination={locations.store || {
+             latitude: 37.7882,
+             longitude: -122.4324
+            }}
             apikey={GOOGLE_MAPS_KEY}
             strokeWidth={3}
             strokeColor="#F8931F"
             optimizeWaypoints={true}
+
           />
         )}
 
@@ -309,8 +328,14 @@ const TrackScreen = ({ route, navigation }) => {
         
         {locations.driver && locations.user && order.status === 'OUT_FOR_DELIVERY' && (
           <MapViewDirections
-            origin={locations.driver}
-            destination={locations.user}
+            origin={locations.driver || {
+             latitude: 37.7882,
+             longitude: -122.4324
+            }}
+            destination={locations.user || {
+             latitude: 37.7882,
+             longitude: -122.4324
+            }}
             
             apikey={GOOGLE_MAPS_KEY}
             strokeWidth={3}

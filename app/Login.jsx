@@ -43,7 +43,7 @@ const loginImages = {
   eggs: require("../assets/images/eggsLogin.png"),
   breast: require("../assets/images/breastLogin.png"),
   boneless: require("../assets/images/bonelessLogin.png"),
-  logo: require("../assets/images/natiCocoIcon.png"),
+  logo: require("../assets/images/logo.png"),
   leg: require("../assets/images/legLogin.png"),
 };
 
@@ -91,7 +91,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const response = await axios.post(
-        "http://147.93.110.87:3500/auth/login",
+        "https://api.naticoco.com/auth/login",
         {
           mobileno: `+91${phoneNumber}`,
           password: password,
@@ -146,7 +146,7 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const vendorResponse = await axios.post(
-        "http://147.93.110.87:3500/citystore/Login",
+        "https://api.naticoco.com/citystore/Login",
         {
           mobileno: phoneNumber,
           password: password,
@@ -289,6 +289,11 @@ export default function LoginScreen() {
                 />
               </TouchableOpacity>
             </View>
+            <TouchableOpacity onPress={() => navigation.navigate('ForgetPassword')} >
+             <Text style={{color : '#F8931F'}}>
+             Forget Password ? Reset
+             </Text>
+            </TouchableOpacity>
 
             <View style={styles.buttonsContainer}>
               <TouchableOpacity
@@ -542,6 +547,7 @@ const styles = StyleSheet.create({
     top: SCREEN_HEIGHT * 0.08,
     right: 20,
     resizeMode: "contain",
+    zIndex : -2
   },
   boneless: {
     width: SCREEN_WIDTH * 0.25,

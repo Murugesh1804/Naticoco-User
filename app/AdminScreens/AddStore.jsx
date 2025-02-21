@@ -66,7 +66,7 @@ export default function AddStore({ navigation }) {
 
     try {
       const response = await axios.post(
-        "http://147.93.110.87:3500/Admin/addcitystore",
+        "https://api.naticoco.com/Admin/addcitystore",
         {
           name: store.Area,
           email: store.email,

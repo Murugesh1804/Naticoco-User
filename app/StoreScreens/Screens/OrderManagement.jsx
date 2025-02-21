@@ -178,7 +178,7 @@ export default function OrderManagement({ navigation }) {
       }
 
       const response = await axios.get(
-        `http://147.93.110.87:3500/citystore/orders/${storeId}`
+        `https://api.naticoco.com/citystore/orders/${storeId}`
       );
       setOrders(response.data);
       setLoading(false);
@@ -202,7 +202,7 @@ export default function OrderManagement({ navigation }) {
     console.log("Accepting order:", orderId);
     try {
       await axios.post(
-        "http://147.93.110.87:3500/citystore/updateorder",
+        "https://api.naticoco.com/citystore/updateorder",
         {
           orderId: orderId,
           status: "PREPARING",
@@ -223,7 +223,7 @@ export default function OrderManagement({ navigation }) {
   const handleRejectOrder = async (orderId) => {
     try {
       await axios.post(
-        "http://147.93.110.87:3500/citystore/updateorder",
+        "https://api.naticoco.com/citystore/updateorder",
         {
           orderId: orderId,
           status: "REJECTED",
@@ -268,7 +268,7 @@ export default function OrderManagement({ navigation }) {
 
       // Make API call to mark the order as ready and assign a delivery person
       const response = await axios.post(
-        "http://147.93.110.87:3500/api/orders/markreadyAndAssign",
+        "https://api.naticoco.com/api/orders/markreadyAndAssign",
         {
           orderId,
           storeId,
@@ -323,7 +323,7 @@ export default function OrderManagement({ navigation }) {
   const handleVerifyAndComplete = async (orderId, otp) => {
     try {
       const response = await axios.post(
-        "http://147.93.110.87:3500/api/orders/verifyandcomplete",
+        "https://api.naticoco.com/api/orders/verifyandcomplete",
         {
           orderId: orderId,
           otp: otp,

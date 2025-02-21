@@ -159,7 +159,7 @@ const ManageStore = () => {
       setError(null);
 
       const response = await axios.get(
-        "http://147.93.110.87:3500/Admin/cityowners"
+        "https://api.naticoco.com/Admin/cityowners"
       );
       console.log("API Response:", response.data);
 
